@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                             BigInt            @id @default(autoincrement())
+  name                           String?           @db.VarChar(120)
+  email                          String?           @unique @db.VarChar(120)
+  password                       String?           @db.VarChar(255)
+  role                           String?           @db.VarChar(20)
+  designation                    String?           @db.VarChar(100)
+  avatar                         String?
+  teamId                         BigInt?           @map("team_id")
+  departmentId                   BigInt?           @map("department_id")
+  status                         String?           @default("active") @db.VarChar(20)
+  createdAt                      DateTime?         @default(now()) @map("created_at") @db.Timestamp(6)
+  attachments                    attachments[]
+  project_updates                project_updates[]
+  projects                       projects[]
+  task_comments                  task_comments[]
+  tasks_tasks_assigned_toTousers tasks[]           @relation("tasks_assigned_toTousers")
+  tasks_tasks_created_byTousers  tasks[]           @relation("tasks_created_byTousers")
+  teams_teams_lead_idTousers     teams[]           @relation("teams_lead_idTousers")
+  departments                    departments?      @relation(fields: [departmentId], references: [id], onUpdate: NoAction, map: "fk_users_department")
+  teams_users_team_idToteams     teams?            @relation("users_team_idToteams", fields: [teamId], references: [id], onUpdate: NoAction, map: "fk_users_team")
+
+  @@map("users")
+}
+
+model attachments {
+  id                BigInt           @id @default(autoincrement())
+  task_id           BigInt?
+  project_update_id BigInt?
+  uploaded_by       BigInt?
+  file_url          String
+  created_at        DateTime?        @default(now()) @db.Timestamp(6)
+  project_updates   project_updates? @relation(fields: [project_update_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks             tasks?           @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             User?            @relation(fields: [uploaded_by], references: [id], onUpdate: NoAction)
+}
+
+model departments {
+  id         BigInt   @id @default(autoincrement())
+  name       String   @unique(map: "unique_department_name") @db.VarChar(100)
+  slug       String   @unique @db.VarChar(100)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  teams      teams[]
+  users      User[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model project_updates {
+  id                BigInt        @id @default(autoincrement())
+  project_id        BigInt
+  updated_by        BigInt
+  update_date       DateTime      @db.Date
+  previous_progress Int?
+  current_progress  Int?
+  weekly_movement   Int?
+  status            String?       @db.VarChar(100)
+  today_update      String?
+  blockers          String?
+  next_action       String?
+  timeline_note     String?
+  remarks           String?
+  created_at        DateTime      @default(now()) @db.Timestamp(6)
+  attachments       attachments[]
+  projects          projects      @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             User          @relation(fields: [updated_by], references: [id], onUpdate: NoAction)
+
+  @@unique([project_id, update_date], map: "unique_project_update_per_day")
+  @@index([update_date], map: "idx_updates_date")
+  @@index([project_id], map: "idx_updates_project_id")
+  @@index([updated_by], map: "idx_updates_updated_by")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model projects {
+  id               BigInt            @id @default(autoincrement())
+  project_name     String            @db.VarChar(255)
+  owner_id         BigInt
+  team_id          BigInt?
+  category         String?           @db.VarChar(100)
+  status           String            @default("planning") @db.VarChar(20)
+  priority         String            @default("medium") @db.VarChar(20)
+  current_progress Int               @default(0)
+  target_progress  Int               @default(100)
+  risk_level       String            @default("low") @db.VarChar(20)
+  due_date         DateTime?         @db.Date
+  description      String?
+  created_at       DateTime          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime          @default(now()) @db.Timestamp(6)
+  project_updates  project_updates[]
+  teams            teams?            @relation(fields: [team_id], references: [id], onUpdate: NoAction, map: "fk_projects_team")
+  users            User              @relation(fields: [owner_id], references: [id], onUpdate: NoAction)
+  tasks            tasks[]
+
+  @@index([owner_id], map: "idx_projects_owner_id")
+  @@index([priority], map: "idx_projects_priority")
+  @@index([status], map: "idx_projects_status")
+  @@index([team_id], map: "idx_projects_team_id")
+}
+
+model task_comments {
+  id         BigInt    @id @default(autoincrement())
+  task_id    BigInt
+  user_id    BigInt
+  comment    String
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  tasks      tasks     @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tasks {
+  id                             BigInt          @id @default(autoincrement())
+  project_id                     BigInt
+  assigned_to                    BigInt?
+  created_by                     BigInt?
+  title                          String          @db.VarChar(255)
+  description                    String?
+  task_type                      String?         @db.VarChar(50)
+  status                         String          @default("todo") @db.VarChar(20)
+  priority                       String          @default("medium") @db.VarChar(20)
+  progress                       Int             @default(0)
+  dependency_task_id             BigInt?
+  blocker                        String?
+  expected_output                String?
+  start_date                     DateTime?       @db.Date
+  due_date                       DateTime?       @db.Date
+  created_at                     DateTime        @default(now()) @db.Timestamp(6)
+  updated_at                     DateTime        @default(now()) @db.Timestamp(6)
+  attachments                    attachments[]
+  task_comments                  task_comments[]
+  users_tasks_assigned_toTousers User?           @relation("tasks_assigned_toTousers", fields: [assigned_to], references: [id], onUpdate: NoAction)
+  users_tasks_created_byTousers  User?           @relation("tasks_created_byTousers", fields: [created_by], references: [id], onUpdate: NoAction)
+  tasks                          tasks?          @relation("tasksTotasks", fields: [dependency_task_id], references: [id], onUpdate: NoAction)
+  other_tasks                    tasks[]         @relation("tasksTotasks")
+  projects                       projects        @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([assigned_to], map: "idx_tasks_assigned_to")
+  @@index([priority], map: "idx_tasks_priority")
+  @@index([project_id], map: "idx_tasks_project_id")
+  @@index([status], map: "idx_tasks_status")
+}
+
+model teams {
+  id                         BigInt      @id @default(autoincrement())
+  department_id              BigInt
+  name                       String      @db.VarChar(150)
+  lead_id                    BigInt?
+  created_at                 DateTime    @default(now()) @db.Timestamp(6)
+  projects                   projects[]
+  departments                departments @relation(fields: [department_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_teams_lead_idTousers User?       @relation("teams_lead_idTousers", fields: [lead_id], references: [id], onUpdate: NoAction)
+  users_users_team_idToteams User[]      @relation("users_team_idToteams")
+
+  @@unique([department_id, name], map: "unique_team_per_department")
+}
