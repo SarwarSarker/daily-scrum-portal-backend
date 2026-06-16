@@ -1,6 +1,7 @@
 // middleware/error.middleware.ts
 
 import { Request, Response, NextFunction } from "express";
+import { MulterError } from "multer";
 import { sendError } from "../utlis/response";
 
 // Centralized error handler — keeps controllers free of try/catch boilerplate
@@ -14,5 +15,12 @@ export const errorHandler = (
 ) => {
   console.error(err);
   if (res.headersSent) return;
+
+  if (err instanceof MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE" ? "File is too large" : err.message;
+    return sendError(res, 400, message);
+  }
+
   return sendError(res, 500, "Internal server error");
 };

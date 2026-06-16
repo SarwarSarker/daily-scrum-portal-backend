@@ -1,0 +1,325 @@
+### Daily Scrum API — REST client scratch file
+### Works with the VS Code "REST Client" extension (humao.rest-client)
+### and JetBrains HTTP client. Run requests top-to-bottom; @token is captured
+### from the login response and reused via the {{login.response...}} ref.
+
+@host = http://localhost:5000
+@baseUrl = {{host}}/api/v1
+
+###############################################################################
+# AUTH
+###############################################################################
+
+### Register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Alice Admin",
+  "email": "alice@example.com",
+  "password": "secret123",
+  "role": "admin"
+}
+
+### Login (capture the token from this response)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "secret123"
+}
+
+### Reusable bearer token from the login response above
+@token = {{login.response.body.data.token}}
+
+### Admin-only probe
+GET {{baseUrl}}/auth/admin
+Authorization: Bearer {{token}}
+
+###############################################################################
+# DEPARTMENTS
+###############################################################################
+
+### Create department
+# @name createDept
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Engineering"
+}
+
+@deptId = {{createDept.response.body.data.id}}
+
+### List departments
+GET {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+
+### Get department (includes its teams)
+GET {{baseUrl}}/departments/{{deptId}}
+Authorization: Bearer {{token}}
+
+### Update department
+PUT {{baseUrl}}/departments/{{deptId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Engineering & Platform"
+}
+
+### Delete department
+DELETE {{baseUrl}}/departments/{{deptId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+# TEAMS
+###############################################################################
+
+### Create team
+# @name createTeam
+POST {{baseUrl}}/teams
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Backend Squad",
+  "department_id": "{{deptId}}",
+  "lead_id": 1
+}
+
+@teamId = {{createTeam.response.body.data.id}}
+
+### List teams (optionally filter by department)
+GET {{baseUrl}}/teams?department_id={{deptId}}
+Authorization: Bearer {{token}}
+
+### Get team
+GET {{baseUrl}}/teams/{{teamId}}
+Authorization: Bearer {{token}}
+
+### Update team
+PUT {{baseUrl}}/teams/{{teamId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Backend Platform Squad"
+}
+
+### Delete team
+DELETE {{baseUrl}}/teams/{{teamId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+# PROJECTS
+###############################################################################
+
+### Create project (owner defaults to the authenticated user)
+# @name createProject
+POST {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "project_name": "Daily Scrum Revamp",
+  "team_id": "{{teamId}}",
+  "category": "internal",
+  "priority": "high",
+  "target_progress": 100,
+  "due_date": "2026-09-30",
+  "description": "Rebuild the scrum tracking dashboard"
+}
+
+@projectId = {{createProject.response.body.data.id}}
+
+### List projects (filters: status, priority, team_id, owner_id)
+GET {{baseUrl}}/projects?status=planning&priority=high
+Authorization: Bearer {{token}}
+
+### Get project (includes owner + tasks)
+GET {{baseUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
+
+### Update project
+PUT {{baseUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "in_progress",
+  "current_progress": 25
+}
+
+### Delete project
+DELETE {{baseUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+# TASKS
+###############################################################################
+
+### Create task (created_by = authenticated user)
+# @name createTask
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "project_id": "{{projectId}}",
+  "title": "Design schema",
+  "assigned_to": 1,
+  "priority": "high",
+  "progress": 0,
+  "due_date": "2026-07-15"
+}
+
+@taskId = {{createTask.response.body.data.id}}
+
+### List tasks (filters: project_id, assigned_to, status, priority)
+GET {{baseUrl}}/tasks?project_id={{projectId}}
+Authorization: Bearer {{token}}
+
+### Get task (includes project, assignee, creator, comments)
+GET {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+
+### Update task (owner/manager/lead/admin only)
+PUT {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "in_progress",
+  "progress": 40
+}
+
+### Delete task
+DELETE {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+# PROJECT UPDATES
+###############################################################################
+
+### Create project update (updated_by = authenticated user)
+# @name createUpdate
+POST {{baseUrl}}/project-updates
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "project_id": "{{projectId}}",
+  "update_date": "2026-06-17",
+  "previous_progress": 25,
+  "current_progress": 40,
+  "weekly_movement": 15,
+  "status": "on_track",
+  "today_update": "Finished schema design",
+  "next_action": "Start API implementation"
+}
+
+@updateId = {{createUpdate.response.body.data.id}}
+
+### List project updates (filters: project_id, updated_by)
+GET {{baseUrl}}/project-updates?project_id={{projectId}}
+Authorization: Bearer {{token}}
+
+### Get project update (includes author, project, attachments)
+GET {{baseUrl}}/project-updates/{{updateId}}
+Authorization: Bearer {{token}}
+
+### Update a project update
+PUT {{baseUrl}}/project-updates/{{updateId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "remarks": "Ahead of schedule"
+}
+
+### Delete a project update (admin/manager/lead)
+DELETE {{baseUrl}}/project-updates/{{updateId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+# TASK COMMENTS
+###############################################################################
+
+### Create comment (user_id = authenticated user)
+# @name createComment
+POST {{baseUrl}}/task-comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "task_id": "{{taskId}}",
+  "comment": "Looks good, ship it."
+}
+
+@commentId = {{createComment.response.body.data.id}}
+
+### List comments (filter: task_id)
+GET {{baseUrl}}/task-comments?task_id={{taskId}}
+Authorization: Bearer {{token}}
+
+### Update comment (author or admin/manager/lead)
+PUT {{baseUrl}}/task-comments/{{commentId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "comment": "Looks good, shipping now."
+}
+
+### Delete comment (author or admin/manager/lead)
+DELETE {{baseUrl}}/task-comments/{{commentId}}
+Authorization: Bearer {{token}}
+
+###############################################################################
+# ATTACHMENTS
+###############################################################################
+
+### Upload a file attachment (multipart) — field name must be "file"
+# @name uploadAttachment
+POST {{baseUrl}}/attachments
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----Boundary
+
+------Boundary
+Content-Disposition: form-data; name="task_id"
+
+{{taskId}}
+------Boundary
+Content-Disposition: form-data; name="file"; filename="notes.txt"
+Content-Type: text/plain
+
+< ./README.md
+------Boundary--
+
+@attachmentId = {{uploadAttachment.response.body.data.id}}
+
+### Create attachment from an external URL (no file upload)
+POST {{baseUrl}}/attachments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "task_id": "{{taskId}}",
+  "file_url": "https://example.com/spec.pdf"
+}
+
+### List attachments (filters: task_id, project_update_id)
+GET {{baseUrl}}/attachments?task_id={{taskId}}
+Authorization: Bearer {{token}}
+
+### Get attachment
+GET {{baseUrl}}/attachments/{{attachmentId}}
+Authorization: Bearer {{token}}
+
+### Delete attachment (uploader or admin/manager/lead; removes local file)
+DELETE {{baseUrl}}/attachments/{{attachmentId}}
+Authorization: Bearer {{token}}
