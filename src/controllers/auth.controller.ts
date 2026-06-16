@@ -6,34 +6,45 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../database";
 import { env } from "../configs/env";
 import { Role } from "../utlis/role";
+import { sendSuccess, sendError } from "../utlis/response";
 
 export const register = async (req: Request, res: Response) => {
-  const { name, email, password, role } = req.body;
+  const {
+    name,
+    email,
+    password,
+    role,
+    designation,
+    avatar,
+    team_id,
+    department_id,
+    status,
+  } = req.body;
 
   if (!name || !email || !password) {
-    return res.status(400).json({ message: "name, email and password are required" });
+    return sendError(res, 400, "name, email and password are required");
   }
 
   const exists = await prisma.user.findUnique({ where: { email } });
   if (exists) {
-    return res.status(409).json({ message: "Email already registered" });
+    return sendError(res, 409, "Email already registered");
   }
 
-  const user = await prisma.user.create({
+  await prisma.user.create({
     data: {
       name,
       email,
       password: await bcrypt.hash(password, 10),
       role: role ?? Role.EMPLOYEE,
+      designation,
+      avatar,
+      teamId: team_id != null ? BigInt(team_id) : undefined,
+      departmentId: department_id != null ? BigInt(department_id) : undefined,
+      status: status ?? undefined,
     },
   });
 
-  return res.status(201).json({
-    id: user.id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-  });
+  return sendSuccess(res, 201, "User registered successfully");
 };
 
 export const login = async (req: Request, res: Response) => {
@@ -41,7 +52,7 @@ export const login = async (req: Request, res: Response) => {
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
-    return res.status(401).json({ message: "Invalid credentials" });
+    return sendError(res, 401, "Invalid credentials");
   }
 
   const token = jwt.sign(
@@ -50,5 +61,5 @@ export const login = async (req: Request, res: Response) => {
     { expiresIn: env.accessExpires } as jwt.SignOptions
   );
 
-  return res.json({ token });
+  return sendSuccess(res, 200, "Login successful", { token });
 };

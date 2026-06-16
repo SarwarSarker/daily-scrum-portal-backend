@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "../types/auth.types";
 import { env } from "../configs/env";
+import { sendError } from "../utlis/response";
 
 export const authenticate = (
   req: Request,
@@ -14,9 +15,7 @@ export const authenticate = (
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      return res.status(401).json({
-        message: "Unauthorized",
-      });
+      return sendError(res, 401, "Unauthorized");
     }
 
     const decoded = jwt.verify(
@@ -28,8 +27,6 @@ export const authenticate = (
 
     next();
   } catch {
-    return res.status(401).json({
-      message: "Invalid token",
-    });
+    return sendError(res, 401, "Invalid token");
   }
 };
