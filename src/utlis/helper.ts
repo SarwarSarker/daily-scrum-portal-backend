@@ -10,6 +10,12 @@ export const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+// Helper function to handle Express params that can be string | string[]
+// Converts them to a single string for use with BigInt, etc.
+export const toString = (value: string | string[]): string => {
+  return Array.isArray(value) ? value[0] : value;
+};
+
 // Wraps an async route handler so rejected promises are forwarded to
 // Express's error-handling middleware instead of becoming unhandled rejections.
 export const asyncHandler =
