@@ -179,8 +179,6 @@ export const updateUser = async (req: Request, res: Response) => {
         updated_at: true,
         teamId: true,
         departmentId: true,
-        team: { select: { id: true, name: true } },
-        department: { select: { id: true, name: true, slug: true } },
       },
     });
 
@@ -197,22 +195,6 @@ export const updateUser = async (req: Request, res: Response) => {
       teamId: user.teamId?.toString(),
       departmentId: user.departmentId?.toString(),
     };
-
-    // Add team and department separately if they exist
-    try {
-      if (user.team && typeof user.team === 'object') {
-        serializedUser.team = { ...(user.team as any), id: (user.team as any).id?.toString() };
-      }
-    } catch (e) {
-      // Ignore team serialization errors
-    }
-    try {
-      if (user.department && typeof user.department === 'object') {
-        serializedUser.department = { ...(user.department as any), id: (user.department as any).id?.toString() };
-      }
-    } catch (e) {
-      // Ignore department serialization errors
-    }
 
     return sendSuccess(res, 200, "User updated successfully", serializedUser);
   } catch (error) {
