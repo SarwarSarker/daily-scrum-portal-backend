@@ -92,6 +92,15 @@ export const updateTeam = async (req: Request, res: Response) => {
   const { name, department_id, lead_id } = req.body;
 
   try {
+    // First check if team exists
+    const existingTeam = await prisma.team.findUnique({
+      where: { id: BigInt(toString(id)) },
+    });
+
+    if (!existingTeam) {
+      return sendError(res, 404, "Team not found");
+    }
+
     const team = await prisma.team.update({
       where: { id: BigInt(toString(id)) },
       data: {
