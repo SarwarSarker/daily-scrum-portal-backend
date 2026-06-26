@@ -1,11 +1,11 @@
 // routes/auth.routes.ts
 
 import { Router } from "express";
-import { register, login } from "../controllers/auth.controller";
-import { authenticate } from "../middlewares/auth.middleware";
-import { authorize } from "../middlewares/role.middleware";
-import { Role } from "../utlis/role";
-import { sendSuccess } from "../utlis/response";
+import { register, login } from "../../controllers/auth.controller";
+import { authenticate } from "../../middlewares/auth.middleware";
+import { authorize } from "../../middlewares/role.middleware";
+import { Role } from "../../utlis/role";
+import { sendSuccess } from "../../utlis/response";
 
 const router = Router();
 

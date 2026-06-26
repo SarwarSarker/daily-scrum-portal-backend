@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
-import { prisma } from "../database";
+import { prisma } from "../configs/database";
 import { sendSuccess, sendError } from "../utlis/response";
 import { Role } from "../utlis/role";
 import { env } from "../configs/env";

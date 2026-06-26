@@ -2,7 +2,7 @@
 
 import { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
-import { prisma } from "../database";
+import { prisma } from "../configs/database";
 import { sendSuccess, sendError } from "../utlis/response";
 import { Role } from "../utlis/role";
 
@@ -64,7 +64,7 @@ export const getTask = async (req: Request, res: Response) => {
       projects: true,
       task_comments: {
         include: { users: { select: { id: true, name: true, email: true } } },
-        orderBy: { createdAt: "asc" },
+        orderBy: { created_at: "asc" },
       },
     },
   });

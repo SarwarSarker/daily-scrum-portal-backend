@@ -6,10 +6,10 @@ import {
   listAttachments,
   getAttachment,
   deleteAttachment,
-} from "../controllers/attachment.controller";
-import { authenticate } from "../middlewares/auth.middleware";
-import { upload } from "../middlewares/upload.middleware";
-import { asyncHandler } from "../utlis/helper";
+} from "../../controllers/attachment.controller";
+import { authenticate } from "../../middlewares/auth.middleware";
+import { upload } from "../../middlewares/upload.middleware";
+import { asyncHandler } from "../../utlis/helper";
 
 const router = Router();
 

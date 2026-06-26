@@ -2,7 +2,7 @@
 
 import { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
-import { prisma } from "../database";
+import { prisma } from "../configs/database";
 import { sendSuccess, sendError } from "../utlis/response";
 
 export const createProject = async (req: Request, res: Response) => {

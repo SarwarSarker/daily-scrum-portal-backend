@@ -7,11 +7,11 @@ import {
   getProjectUpdate,
   updateProjectUpdate,
   deleteProjectUpdate,
-} from "../controllers/project-update.controller";
-import { authenticate } from "../middlewares/auth.middleware";
-import { authorize } from "../middlewares/role.middleware";
-import { asyncHandler } from "../utlis/helper";
-import { Role } from "../utlis/role";
+} from "../../controllers/project-update.controller";
+import { authenticate } from "../../middlewares/auth.middleware";
+import { authorize } from "../../middlewares/role.middleware";
+import { asyncHandler } from "../../utlis/helper";
+import { Role } from "../../utlis/role";
 
 const router = Router();
 

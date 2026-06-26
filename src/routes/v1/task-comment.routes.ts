@@ -6,9 +6,9 @@ import {
   listTaskComments,
   updateTaskComment,
   deleteTaskComment,
-} from "../controllers/task-comment.controller";
-import { authenticate } from "../middlewares/auth.middleware";
-import { asyncHandler } from "../utlis/helper";
+} from "../../controllers/task-comment.controller";
+import { authenticate } from "../../middlewares/auth.middleware";
+import { asyncHandler } from "../../utlis/helper";
 
 const router = Router();
 

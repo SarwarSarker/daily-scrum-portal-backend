@@ -7,9 +7,9 @@ import {
   getTask,
   updateTask,
   deleteTask,
-} from "../controllers/task.controller";
-import { authenticate } from "../middlewares/auth.middleware";
-import { asyncHandler } from "../utlis/helper";
+} from "../../controllers/task.controller";
+import { authenticate } from "../../middlewares/auth.middleware";
+import { asyncHandler } from "../../utlis/helper";
 
 const router = Router();
 

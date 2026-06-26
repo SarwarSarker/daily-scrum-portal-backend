@@ -3,7 +3,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { prisma } from "../database";
+import { prisma } from "../configs/database";
 import { env } from "../configs/env";
 import { Role } from "../utlis/role";
 import { sendSuccess, sendError } from "../utlis/response";
