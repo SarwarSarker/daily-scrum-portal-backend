@@ -5,6 +5,55 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../configs/database";
 import { sendSuccess, sendError } from "../utlis/response";
 import { toString } from "../utlis/helper";
+import { Role } from "../utlis/role";
+
+export const createUser = async (req: Request, res: Response) => {
+  const { name, email, password, role, designation, avatar, team_id, department_id, status } = req.body;
+
+  if (!name || !email || !password) {
+    return sendError(res, 400, "name, email, and password are required");
+  }
+
+  try {
+    const exists = await prisma.user.findUnique({ where: { email } });
+    if (exists) {
+      return sendError(res, 409, "Email already registered");
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: await bcrypt.hash(password, 10),
+        role: role ?? Role.EMPLOYEE,
+        designation,
+        avatar,
+        teamId: team_id != null ? BigInt(team_id) : undefined,
+        departmentId: department_id != null ? BigInt(department_id) : undefined,
+        status: status ?? "active",
+      },
+    });
+
+    const serializedUser = {
+      id: user.id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      designation: user.designation,
+      avatar: user.avatar,
+      status: user.status,
+      created_at: user.created_at?.toISOString(),
+      updated_at: user.updated_at?.toISOString(),
+      teamId: user.teamId?.toString(),
+      departmentId: user.departmentId?.toString(),
+    };
+
+    return sendSuccess(res, 201, "User created successfully", serializedUser);
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return sendError(res, 500, "Failed to create user");
+  }
+};
 
 export const getUsers = async (req: Request, res: Response) => {
   try {

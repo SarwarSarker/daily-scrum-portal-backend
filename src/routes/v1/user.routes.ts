@@ -5,6 +5,7 @@ import {
   getUsers,
   getUserById,
   getProfile,
+  createUser,
   updateUser,
   deleteUser,
 } from "../../controllers/user.controller";
@@ -17,7 +18,8 @@ const router = Router();
 // All user routes require authentication
 router.use(authenticate);
 
-// Admin & Manager can view all users
+// Admin & Manager can create and view all users
+router.post("/", authorize(Role.ADMIN, Role.MANAGER), createUser);
 router.get("/", authorize(Role.ADMIN, Role.MANAGER), getUsers);
 
 // All authenticated users can view their own profile
