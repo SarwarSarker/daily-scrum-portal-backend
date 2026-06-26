@@ -4,6 +4,7 @@ import { Router } from "express";
 import {
   getUsers,
   getUserById,
+  getProfile,
   updateUser,
   deleteUser,
 } from "../../controllers/user.controller";
@@ -20,7 +21,7 @@ router.use(authenticate);
 router.get("/", authorize(Role.ADMIN, Role.MANAGER), getUsers);
 
 // All authenticated users can view their own profile
-router.get("/profile", getUserById);
+router.get("/profile", getProfile);
 
 // Admin & Manager can view any user
 router.get("/:id", authorize(Role.ADMIN, Role.MANAGER), getUserById);

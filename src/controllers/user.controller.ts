@@ -26,37 +26,74 @@ export const getUsers = async (req: Request, res: Response) => {
         designation: true,
         avatar: true,
         status: true,
-        createdAt: true,
-        updatedAt: true,
         teamId: true,
         departmentId: true,
-        team: { select: { id: true, name: true } },
-        department: { select: { id: true, name: true, slug: true } },
-        _count: {
-          select: {
-            assignedTasks: true,
-            createdTasks: true,
-            projectUpdates: true,
-            taskComments: true,
-          },
-        },
+        created_at: true,
+        updated_at: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { created_at: "desc" },
     });
 
     const serializedUsers = users.map((user: any) => ({
       ...user,
       id: user.id.toString(),
-      teamId: user.teamId?.toString(),
-      departmentId: user.departmentId?.toString(),
-      team: user.team ? { ...user.team, id: user.team.id.toString() } : null,
-      department: user.department ? { ...user.department, id: user.department.id.toString() } : null,
-    }));
+      }));
 
     return sendSuccess(res, 200, "Users retrieved successfully", serializedUsers);
   } catch (error) {
     console.error("Error fetching users:", error);
     return sendError(res, 500, "Failed to fetch users");
+  }
+};
+
+export const getProfile = async (req: Request, res: Response) => {
+  // Get user ID from JWT token (set by auth middleware)
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return sendError(res, 401, "Unauthorized");
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: BigInt(userId) },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        designation: true,
+        avatar: true,
+        status: true,
+        created_at: true,
+        updated_at: true,
+        teamId: true,
+        departmentId: true,
+      },
+    });
+
+    if (!user) {
+      return sendError(res, 404, "User not found");
+    }
+
+    const serializedUser: any = {
+      id: user.id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      designation: user.designation,
+      avatar: user.avatar,
+      status: user.status,
+      created_at: user.created_at?.toISOString(),
+      updated_at: user.updated_at?.toISOString(),
+      teamId: user.teamId?.toString(),
+      departmentId: user.departmentId?.toString(),
+    };
+
+    return sendSuccess(res, 200, "Profile retrieved successfully", serializedUser);
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    return sendError(res, 500, "Failed to fetch profile");
   }
 };
 
@@ -74,47 +111,10 @@ export const getUserById = async (req: Request, res: Response) => {
         designation: true,
         avatar: true,
         status: true,
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
         teamId: true,
         departmentId: true,
-        team: {
-          select: { id: true, name: true, department: { select: { id: true, name: true } } },
-        },
-        department: {
-          select: { id: true, name: true, slug: true },
-        },
-        assignedTasks: {
-          include: {
-            project: { select: { id: true, title: true } },
-          },
-        },
-        createdTasks: {
-          include: {
-            project: { select: { id: true, title: true } },
-          },
-        },
-        projectUpdates: {
-          include: {
-            project: { select: { id: true, title: true } },
-          },
-          orderBy: { update_date: "desc" },
-        },
-        taskComments: {
-          include: {
-            task: { select: { id: true, title: true } },
-          },
-          orderBy: { created_at: "desc" },
-        },
-        ownedProjects: {
-          select: { id: true, title: true, status: true },
-        },
-        createdProjects: {
-          select: { id: true, title: true, status: true },
-        },
-        ledTeams: {
-          select: { id: true, name: true },
-        },
       },
     });
 
@@ -122,58 +122,18 @@ export const getUserById = async (req: Request, res: Response) => {
       return sendError(res, 404, "User not found");
     }
 
-    const serializedUser = {
-      ...user,
+    const serializedUser: any = {
       id: user.id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      designation: user.designation,
+      avatar: user.avatar,
+      status: user.status,
+      created_at: user.created_at?.toISOString(),
+      updated_at: user.updated_at?.toISOString(),
       teamId: user.teamId?.toString(),
       departmentId: user.departmentId?.toString(),
-      team: user.team ? { ...user.team, id: user.team.id.toString(), department: user.team.department ? { ...user.team.department, id: user.team.department.id.toString() } : null } : null,
-      department: user.department ? { ...user.department, id: user.department.id.toString() } : null,
-      assignedTasks: user.assignedTasks.map((task: any) => ({
-        ...task,
-        id: task.id.toString(),
-        project_id: task.project_id.toString(),
-        assigned_to: task.assigned_to?.toString(),
-        created_by: task.created_by.toString(),
-        project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
-      })),
-      createdTasks: user.createdTasks.map((task: any) => ({
-        ...task,
-        id: task.id.toString(),
-        project_id: task.project_id.toString(),
-        assigned_to: task.assigned_to?.toString(),
-        created_by: task.created_by.toString(),
-        project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
-      })),
-      projectUpdates: user.projectUpdates.map((update: any) => ({
-        ...update,
-        id: update.id.toString(),
-        project_id: update.project_id.toString(),
-        updated_by: update.updated_by.toString(),
-        project: update.project ? { ...update.project, id: update.project.id.toString() } : null,
-      })),
-      taskComments: user.taskComments.map((comment: any) => ({
-        ...comment,
-        id: comment.id.toString(),
-        task_id: comment.task_id.toString(),
-        user_id: comment.user_id.toString(),
-        task: comment.task ? { ...comment.task, id: comment.task.id.toString() } : null,
-      })),
-      ownedProjects: user.ownedProjects.map((project: any) => ({
-        ...project,
-        id: project.id.toString(),
-        owner_id: project.owner_id.toString(),
-        team_id: project.team_id.toString(),
-        created_by: project.created_by.toString(),
-      })),
-      createdProjects: user.createdProjects.map((project: any) => ({
-        ...project,
-        id: project.id.toString(),
-        owner_id: project.owner_id.toString(),
-        team_id: project.team_id.toString(),
-        created_by: project.created_by.toString(),
-      })),
-      ledTeams: user.ledTeams.map((team: any) => ({ ...team, id: team.id.toString() })),
     };
 
     return sendSuccess(res, 200, "User retrieved successfully", serializedUser);
@@ -215,8 +175,8 @@ export const updateUser = async (req: Request, res: Response) => {
         designation: true,
         avatar: true,
         status: true,
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
         teamId: true,
         departmentId: true,
         team: { select: { id: true, name: true } },
@@ -224,14 +184,35 @@ export const updateUser = async (req: Request, res: Response) => {
       },
     });
 
-    const serializedUser = {
-      ...user,
+    const serializedUser: any = {
       id: user.id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      designation: user.designation,
+      avatar: user.avatar,
+      status: user.status,
+      created_at: user.created_at?.toISOString(),
+      updated_at: user.updated_at?.toISOString(),
       teamId: user.teamId?.toString(),
       departmentId: user.departmentId?.toString(),
-      team: user.team ? { ...user.team, id: user.team.id.toString() } : null,
-      department: user.department ? { ...user.department, id: user.department.id.toString() } : null,
     };
+
+    // Add team and department separately if they exist
+    try {
+      if (user.team && typeof user.team === 'object') {
+        serializedUser.team = { ...(user.team as any), id: (user.team as any).id?.toString() };
+      }
+    } catch (e) {
+      // Ignore team serialization errors
+    }
+    try {
+      if (user.department && typeof user.department === 'object') {
+        serializedUser.department = { ...(user.department as any), id: (user.department as any).id?.toString() };
+      }
+    } catch (e) {
+      // Ignore department serialization errors
+    }
 
     return sendSuccess(res, 200, "User updated successfully", serializedUser);
   } catch (error) {

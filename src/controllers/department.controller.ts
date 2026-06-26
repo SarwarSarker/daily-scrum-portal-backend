@@ -18,21 +18,11 @@ export const createDepartment = async (req: Request, res: Response) => {
         name,
         slug: slug.toLowerCase().replace(/\s+/g, "-"),
       },
-      include: {
-        users: {
-          select: { id: true, name: true, email: true, designation: true, status: true },
-        },
-        teams: {
-          select: { id: true, name: true },
-        },
-      },
     });
 
     const serializedDepartment = {
       ...department,
       id: department.id.toString(),
-      users: department.users.map((user: any) => ({ ...user, id: user.id.toString() })),
-      teams: department.teams.map((team: any) => ({ ...team, id: team.id.toString() })),
     };
 
     return sendSuccess(res, 201, "Department created successfully", serializedDepartment);
@@ -49,14 +39,8 @@ export const getDepartments = async (req: Request, res: Response) => {
   try {
     const departments = await prisma.department.findMany({
       include: {
-        users: {
-          select: { id: true, name: true, email: true, designation: true, status: true },
-        },
         teams: {
           select: { id: true, name: true },
-          include: {
-            lead: { select: { id: true, name: true, email: true } },
-          },
         },
       },
       orderBy: { name: "asc" },
@@ -65,12 +49,7 @@ export const getDepartments = async (req: Request, res: Response) => {
     const serializedDepartments = departments.map((department: any) => ({
       ...department,
       id: department.id.toString(),
-      users: department.users.map((user: any) => ({ ...user, id: user.id.toString() })),
-      teams: department.teams.map((team: any) => ({
-        ...team,
-        id: team.id.toString(),
-        lead: team.lead ? { ...team.lead, id: team.lead.id.toString() } : null,
-      })),
+      teams: department.teams.map((team: any) => ({ ...team, id: team.id.toString() })),
     }));
 
     return sendSuccess(res, 200, "Departments retrieved successfully", serializedDepartments);
@@ -87,19 +66,8 @@ export const getDepartmentById = async (req: Request, res: Response) => {
     const department = await prisma.department.findUnique({
       where: { id: BigInt(toString(id)) },
       include: {
-        users: {
-          select: { id: true, name: true, email: true, designation: true, status: true, role: true },
-        },
         teams: {
-          include: {
-            lead: { select: { id: true, name: true, email: true } },
-            users: {
-              select: { id: true, name: true, email: true, designation: true, status: true },
-            },
-            projects: {
-              select: { id: true, title: true, status: true },
-            },
-          },
+          select: { id: true, name: true },
         },
       },
     });
@@ -111,16 +79,7 @@ export const getDepartmentById = async (req: Request, res: Response) => {
     const serializedDepartment = {
       ...department,
       id: department.id.toString(),
-      users: department.users.map((user: any) => ({ ...user, id: user.id.toString() })),
-      teams: department.teams.map((team: any) => ({
-        ...team,
-        id: team.id.toString(),
-        departmentId: team.departmentId?.toString(),
-        leadId: team.leadId?.toString(),
-        lead: team.lead ? { ...team.lead, id: team.lead.id.toString() } : null,
-        users: team.users.map((user: any) => ({ ...user, id: user.id.toString() })),
-        projects: team.projects.map((project: any) => ({ ...project, id: project.id.toString() })),
-      })),
+      teams: department.teams.map((team: any) => ({ ...team, id: team.id.toString() })),
     };
 
     return sendSuccess(res, 200, "Department retrieved successfully", serializedDepartment);
@@ -142,21 +101,11 @@ export const updateDepartment = async (req: Request, res: Response) => {
         ...(slug && { slug: slug.toLowerCase().replace(/\s+/g, "-") }),
         updated_at: new Date(),
       },
-      include: {
-        users: {
-          select: { id: true, name: true, email: true, designation: true, status: true },
-        },
-        teams: {
-          select: { id: true, name: true },
-        },
-      },
     });
 
     const serializedDepartment = {
       ...department,
       id: department.id.toString(),
-      users: department.users.map((user: any) => ({ ...user, id: user.id.toString() })),
-      teams: department.teams.map((team: any) => ({ ...team, id: team.id.toString() })),
     };
 
     return sendSuccess(res, 200, "Department updated successfully", serializedDepartment);

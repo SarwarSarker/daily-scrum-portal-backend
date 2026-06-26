@@ -16,12 +16,8 @@ export const createTeam = async (req: Request, res: Response) => {
     const team = await prisma.team.create({
       data: {
         name,
-        departmentId: department_id ? BigInt(department_id) : null,
-        leadId: lead_id ? BigInt(lead_id) : null,
-      },
-      include: {
-        department: { select: { id: true, name: true, slug: true } },
-        lead: { select: { id: true, name: true, email: true } },
+        department_id: department_id ? BigInt(department_id) : null,
+        lead_id: lead_id ? BigInt(lead_id) : null,
       },
     });
 
@@ -30,8 +26,6 @@ export const createTeam = async (req: Request, res: Response) => {
       id: team.id.toString(),
       department_id: team.department_id?.toString(),
       lead_id: team.lead_id?.toString(),
-      department: team.department ? { ...team.department, id: team.department.id.toString() } : null,
-      lead: team.lead ? { ...team.lead, id: team.lead.id.toString() } : null,
     };
 
     return sendSuccess(res, 201, "Team created successfully", serializedTeam);
@@ -46,32 +40,18 @@ export const getTeams = async (req: Request, res: Response) => {
     const { department_id } = req.query;
 
     const where: any = {};
-    if (department_id) where.departmentId = BigInt(department_id as string);
+    if (department_id) where.department_id = BigInt(department_id as string);
 
     const teams = await prisma.team.findMany({
       where,
-      include: {
-        department: { select: { id: true, name: true, slug: true } },
-        lead: { select: { id: true, name: true, email: true } },
-        users: {
-          select: { id: true, name: true, email: true, designation: true, status: true },
-        },
-        projects: {
-          select: { id: true, title: true, status: true },
-        },
-      },
       orderBy: { created_at: "desc" },
     });
 
     const serializedTeams = teams.map((team: any) => ({
       ...team,
       id: team.id.toString(),
-      departmentId: team.departmentId?.toString(),
-      leadId: team.leadId?.toString(),
-      department: team.department ? { ...team.department, id: team.department.id.toString() } : null,
-      lead: team.lead ? { ...team.lead, id: team.lead.id.toString() } : null,
-      users: team.users.map((user: any) => ({ ...user, id: user.id.toString() })),
-      projects: team.projects.map((project: any) => ({ ...project, id: project.id.toString() })),
+      department_id: team.department_id?.toString(),
+      lead_id: team.lead_id?.toString(),
     }));
 
     return sendSuccess(res, 200, "Teams retrieved successfully", serializedTeams);
@@ -87,19 +67,6 @@ export const getTeamById = async (req: Request, res: Response) => {
   try {
     const team = await prisma.team.findUnique({
       where: { id: BigInt(toString(id)) },
-      include: {
-        department: { select: { id: true, name: true, slug: true } },
-        lead: { select: { id: true, name: true, email: true } },
-        users: {
-          select: { id: true, name: true, email: true, designation: true, status: true },
-        },
-        projects: {
-          include: {
-            owner: { select: { id: true, name: true, email: true } },
-            creator: { select: { id: true, name: true, email: true } },
-          },
-        },
-      },
     });
 
     if (!team) {
@@ -111,18 +78,6 @@ export const getTeamById = async (req: Request, res: Response) => {
       id: team.id.toString(),
       department_id: team.department_id?.toString(),
       lead_id: team.lead_id?.toString(),
-      department: team.department ? { ...team.department, id: team.department.id.toString() } : null,
-      lead: team.lead ? { ...team.lead, id: team.lead.id.toString() } : null,
-      users: team.users.map((user: any) => ({ ...user, id: user.id.toString() })),
-      projects: team.projects.map((project: any) => ({
-        ...project,
-        id: project.id.toString(),
-        owner_id: project.owner_id.toString(),
-        team_id: project.team_id.toString(),
-        created_by: project.created_by.toString(),
-        owner: project.owner ? { ...project.owner, id: project.owner.id.toString() } : null,
-        creator: project.creator ? { ...project.creator, id: project.creator.id.toString() } : null,
-      })),
     };
 
     return sendSuccess(res, 200, "Team retrieved successfully", serializedTeam);
@@ -141,13 +96,9 @@ export const updateTeam = async (req: Request, res: Response) => {
       where: { id: BigInt(toString(id)) },
       data: {
         ...(name && { name }),
-        ...(department_id !== undefined && { departmentId: department_id ? BigInt(department_id) : null }),
-        ...(lead_id !== undefined && { leadId: lead_id ? BigInt(lead_id) : null }),
+        ...(department_id !== undefined && { department_id: department_id ? BigInt(department_id) : null }),
+        ...(lead_id !== undefined && { lead_id: lead_id ? BigInt(lead_id) : null }),
         updated_at: new Date(),
-      },
-      include: {
-        department: { select: { id: true, name: true, slug: true } },
-        lead: { select: { id: true, name: true, email: true } },
       },
     });
 
@@ -156,8 +107,6 @@ export const updateTeam = async (req: Request, res: Response) => {
       id: team.id.toString(),
       department_id: team.department_id?.toString(),
       lead_id: team.lead_id?.toString(),
-      department: team.department ? { ...team.department, id: team.department.id.toString() } : null,
-      lead: team.lead ? { ...team.lead, id: team.lead.id.toString() } : null,
     };
 
     return sendSuccess(res, 200, "Team updated successfully", serializedTeam);

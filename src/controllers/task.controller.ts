@@ -6,23 +6,10 @@ import { sendSuccess, sendError } from "../utlis/response";
 import { toString } from "../utlis/helper";
 
 export const createTask = async (req: Request, res: Response) => {
-  const {
-    project_id,
-    assigned_to,
-    created_by,
-    title,
-    description,
-    status,
-    priority,
-    progress,
-    blocker,
-    expected_output,
-    start_date,
-    end_date,
-  } = req.body;
+  const { project_id, assigned_to, title, description, status, priority, due_date } = req.body;
 
-  if (!project_id || !created_by || !title) {
-    return sendError(res, 400, "project_id, created_by, and title are required");
+  if (!project_id || !title) {
+    return sendError(res, 400, "project_id and title are required");
   }
 
   try {
@@ -30,21 +17,11 @@ export const createTask = async (req: Request, res: Response) => {
       data: {
         project_id: BigInt(project_id),
         assigned_to: assigned_to ? BigInt(assigned_to) : null,
-        created_by: BigInt(created_by),
         title,
         description,
-        status: status ?? "pending",
+        status: status ?? "todo",
         priority: priority ?? "medium",
-        progress: progress ?? 0,
-        blocker,
-        expected_output,
-        start_date: start_date ? new Date(start_date) : null,
-        end_date: end_date ? new Date(end_date) : null,
-      },
-      include: {
-        project: { select: { id: true, title: true } },
-        assignee: { select: { id: true, name: true, email: true } },
-        creator: { select: { id: true, name: true, email: true } },
+        due_date: due_date ? new Date(due_date) : null,
       },
     });
 
@@ -53,10 +30,7 @@ export const createTask = async (req: Request, res: Response) => {
       id: task.id.toString(),
       project_id: task.project_id.toString(),
       assigned_to: task.assigned_to?.toString(),
-      created_by: task.created_by.toString(),
-      project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
-      assignee: task.assignee ? { ...task.assignee, id: task.assignee.id.toString() } : null,
-      creator: task.creator ? { ...task.creator, id: task.creator.id.toString() } : null,
+      due_date: task.due_date?.toISOString(),
     };
 
     return sendSuccess(res, 201, "Task created successfully", serializedTask);
@@ -78,15 +52,7 @@ export const getTasks = async (req: Request, res: Response) => {
     const tasks = await prisma.task.findMany({
       where,
       include: {
-        project: { select: { id: true, title: true } },
-        assignee: { select: { id: true, name: true, email: true } },
-        creator: { select: { id: true, name: true, email: true } },
-        taskComments: {
-          include: {
-            user: { select: { id: true, name: true, email: true } },
-          },
-          orderBy: { created_at: "desc" },
-        },
+        project: { select: { id: true, name: true } },
       },
       orderBy: { created_at: "desc" },
     });
@@ -96,17 +62,8 @@ export const getTasks = async (req: Request, res: Response) => {
       id: task.id.toString(),
       project_id: task.project_id.toString(),
       assigned_to: task.assigned_to?.toString(),
-      created_by: task.created_by.toString(),
+      due_date: task.due_date?.toISOString(),
       project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
-      assignee: task.assignee ? { ...task.assignee, id: task.assignee.id.toString() } : null,
-      creator: task.creator ? { ...task.creator, id: task.creator.id.toString() } : null,
-      taskComments: task.taskComments.map((comment: any) => ({
-        ...comment,
-        id: comment.id.toString(),
-        task_id: comment.task_id.toString(),
-        userId: comment.userId.toString(),
-        user: comment.user ? { ...comment.user, id: comment.user.id.toString() } : null,
-      })),
     }));
 
     return sendSuccess(res, 200, "Tasks retrieved successfully", serializedTasks);
@@ -123,15 +80,7 @@ export const getTaskById = async (req: Request, res: Response) => {
     const task = await prisma.task.findUnique({
       where: { id: BigInt(toString(id)) },
       include: {
-        project: { select: { id: true, title: true } },
-        assignee: { select: { id: true, name: true, email: true } },
-        creator: { select: { id: true, name: true, email: true } },
-        taskComments: {
-          include: {
-            user: { select: { id: true, name: true, email: true } },
-          },
-          orderBy: { created_at: "desc" },
-        },
+        project: { select: { id: true, name: true } },
       },
     });
 
@@ -144,17 +93,8 @@ export const getTaskById = async (req: Request, res: Response) => {
       id: task.id.toString(),
       project_id: task.project_id.toString(),
       assigned_to: task.assigned_to?.toString(),
-      created_by: task.created_by.toString(),
+      due_date: task.due_date?.toISOString(),
       project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
-      assignee: task.assignee ? { ...task.assignee, id: task.assignee.id.toString() } : null,
-      creator: task.creator ? { ...task.creator, id: task.creator.id.toString() } : null,
-      taskComments: task.taskComments.map((comment: any) => ({
-        ...comment,
-        id: comment.id.toString(),
-        task_id: comment.task_id.toString(),
-        user_id: comment.user_id.toString(),
-        user: comment.user ? { ...comment.user, id: comment.user.id.toString() } : null,
-      })),
     };
 
     return sendSuccess(res, 200, "Task retrieved successfully", serializedTask);
@@ -172,11 +112,7 @@ export const updateTask = async (req: Request, res: Response) => {
     description,
     status,
     priority,
-    progress,
-    blocker,
-    expected_output,
-    start_date,
-    end_date,
+    due_date,
   } = req.body;
 
   try {
@@ -188,17 +124,8 @@ export const updateTask = async (req: Request, res: Response) => {
         ...(description !== undefined && { description }),
         ...(status && { status }),
         ...(priority && { priority }),
-        ...(progress !== undefined && { progress }),
-        ...(blocker !== undefined && { blocker }),
-        ...(expected_output !== undefined && { expected_output }),
-        ...(start_date !== undefined && { start_date: start_date ? new Date(start_date) : null }),
-        ...(end_date !== undefined && { end_date: end_date ? new Date(end_date) : null }),
+        ...(due_date !== undefined && { due_date: due_date ? new Date(due_date) : null }),
         updated_at: new Date(),
-      },
-      include: {
-        project: { select: { id: true, title: true } },
-        assignee: { select: { id: true, name: true, email: true } },
-        creator: { select: { id: true, name: true, email: true } },
       },
     });
 
@@ -207,10 +134,7 @@ export const updateTask = async (req: Request, res: Response) => {
       id: task.id.toString(),
       project_id: task.project_id.toString(),
       assigned_to: task.assigned_to?.toString(),
-      created_by: task.created_by.toString(),
-      project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
-      assignee: task.assignee ? { ...task.assignee, id: task.assignee.id.toString() } : null,
-      creator: task.creator ? { ...task.creator, id: task.creator.id.toString() } : null,
+      due_date: task.due_date?.toISOString(),
     };
 
     return sendSuccess(res, 200, "Task updated successfully", serializedTask);
