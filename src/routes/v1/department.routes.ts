@@ -7,11 +7,11 @@ import {
   getDepartment,
   updateDepartment,
   deleteDepartment,
-} from "../controllers/department.controller";
-import { authenticate } from "../middlewares/auth.middleware";
-import { authorize } from "../middlewares/role.middleware";
-import { asyncHandler } from "../utlis/helper";
-import { Role } from "../utlis/role";
+} from "../../controllers/department.controller";
+import { authenticate } from "../../middlewares/auth.middleware";
+import { authorize } from "../../middlewares/role.middleware";
+import { asyncHandler } from "../../utlis/helper";
+import { Role } from "../../utlis/role";
 
 const router = Router();
 
