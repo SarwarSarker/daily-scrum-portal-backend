@@ -21,10 +21,6 @@ export const register = async (req: Request, res: Response) => {
     status,
   } = req.body;
 
-  if (!name || !email || !password) {
-    return sendError(res, 400, "name, email and password are required");
-  }
-
   const exists = await prisma.user.findUnique({ where: { email } });
   if (exists) {
     return sendError(res, 409, "Email already registered");

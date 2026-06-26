@@ -8,10 +8,6 @@ import { toString } from "../utlis/helper";
 export const createTeam = async (req: Request, res: Response) => {
   const { name, department_id, lead_id } = req.body;
 
-  if (!name) {
-    return sendError(res, 400, "name is required");
-  }
-
   try {
     const team = await prisma.team.create({
       data: {

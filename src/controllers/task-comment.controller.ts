@@ -8,10 +8,6 @@ import { toString } from "../utlis/helper";
 export const createTaskComment = async (req: Request, res: Response) => {
   const { task_id, user_id, comment } = req.body;
 
-  if (!task_id || !user_id || !comment) {
-    return sendError(res, 400, "task_id, user_id, and comment are required");
-  }
-
   try {
     const taskComment = await prisma.taskComment.create({
       data: {
@@ -108,10 +104,6 @@ export const getTaskCommentById = async (req: Request, res: Response) => {
 export const updateTaskComment = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { comment } = req.body;
-
-  if (!comment) {
-    return sendError(res, 400, "comment is required");
-  }
 
   try {
     const taskComment = await prisma.taskComment.update({

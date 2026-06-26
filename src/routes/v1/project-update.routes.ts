@@ -11,6 +11,8 @@ import {
 import { authenticate } from "../../middlewares/auth.middleware";
 import { authorize } from "../../middlewares/role.middleware";
 import { Role } from "../../utlis/role";
+import { validate, validateParams, idSchema } from "../../core/validation";
+import { createProjectUpdateSchema, updateProjectUpdateSchema } from "../../core/validation/project-update.validator";
 
 const router = Router();
 
@@ -18,16 +20,16 @@ const router = Router();
 router.use(authenticate);
 
 // All authenticated users can create project updates
-router.post("/", createProjectUpdate);
+router.post("/", validate(createProjectUpdateSchema), createProjectUpdate);
 
 // All authenticated users can view project updates
 router.get("/", getProjectUpdates);
-router.get("/:id", getProjectUpdateById);
+router.get("/:id", validateParams(idSchema), getProjectUpdateById);
 
 // Users can update their own project updates, admins can update any
-router.patch("/:id", updateProjectUpdate);
+router.patch("/:id", validateParams(idSchema), validate(updateProjectUpdateSchema), updateProjectUpdate);
 
 // Users can delete their own project updates, admins can delete any
-router.delete("/:id", deleteProjectUpdate);
+router.delete("/:id", validateParams(idSchema), deleteProjectUpdate);
 
 export default router;

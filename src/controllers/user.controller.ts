@@ -10,10 +10,6 @@ import { Role } from "../utlis/role";
 export const createUser = async (req: Request, res: Response) => {
   const { name, email, password, role, designation, avatar, team_id, department_id, status } = req.body;
 
-  if (!name || !email || !password) {
-    return sendError(res, 400, "name, email, and password are required");
-  }
-
   try {
     const exists = await prisma.user.findUnique({ where: { email } });
     if (exists) {

@@ -21,10 +21,6 @@ export const createProjectUpdate = async (req: Request, res: Response) => {
     remarks,
   } = req.body;
 
-  if (!project_id || !updated_by || !update_date) {
-    return sendError(res, 400, "project_id, updated_by, and update_date are required");
-  }
-
   try {
     const projectUpdate = await prisma.projectUpdate.create({
       data: {

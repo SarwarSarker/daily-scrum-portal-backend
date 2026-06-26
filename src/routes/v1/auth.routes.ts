@@ -6,11 +6,13 @@ import { authenticate } from "../../middlewares/auth.middleware";
 import { authorize } from "../../middlewares/role.middleware";
 import { Role } from "../../utlis/role";
 import { sendSuccess } from "../../utlis/response";
+import { validate } from "../../core/validation";
+import { registerSchema, loginSchema } from "../../core/validation/user.validator";
 
 const router = Router();
 
-router.post("/register", register);
-router.post("/login", login);
+router.post("/register", validate(registerSchema), register);
+router.post("/login", validate(loginSchema), login);
 
 // Example protected route — only admins can access.
 router.get("/admin", authenticate, authorize(Role.ADMIN), (req, res) => {

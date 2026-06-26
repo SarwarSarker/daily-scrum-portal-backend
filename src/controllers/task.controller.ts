@@ -8,10 +8,6 @@ import { toString } from "../utlis/helper";
 export const createTask = async (req: Request, res: Response) => {
   const { project_id, assigned_to, title, description, status, priority, due_date } = req.body;
 
-  if (!project_id || !title) {
-    return sendError(res, 400, "project_id and title are required");
-  }
-
   try {
     const task = await prisma.task.create({
       data: {

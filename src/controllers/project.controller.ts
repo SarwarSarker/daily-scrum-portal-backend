@@ -8,10 +8,6 @@ import { toString } from "../utlis/helper";
 export const createProject = async (req: Request, res: Response) => {
   const { name, status, description, start_date, end_date } = req.body;
 
-  if (!name) {
-    return sendError(res, 400, "name is required");
-  }
-
   try {
     const project = await prisma.project.create({
       data: {

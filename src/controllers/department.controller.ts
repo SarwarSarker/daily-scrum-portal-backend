@@ -8,10 +8,6 @@ import { toString } from "../utlis/helper";
 export const createDepartment = async (req: Request, res: Response) => {
   const { name, slug } = req.body;
 
-  if (!name || !slug) {
-    return sendError(res, 400, "name and slug are required");
-  }
-
   try {
     const department = await prisma.department.create({
       data: {
