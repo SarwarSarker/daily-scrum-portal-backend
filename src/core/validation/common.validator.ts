@@ -12,7 +12,7 @@ export const roleEnum = z.enum(['admin', 'manager', 'team_lead', 'employee']);
 export const userStatusEnum = z.enum(['active', 'inactive']);
 
 // Project status enum
-export const projectStatusEnum = z.enum(['planning', 'active', 'completed', 'on-hold']);
+export const projectStatusEnum = z.enum(['planning', 'in_progress', 'continue_development', 'on_hold', 'completed']);
 
 // Task status enum
 export const taskStatusEnum = z.enum(['todo', 'in-progress', 'completed']);

@@ -6,7 +6,7 @@ import { sendSuccess, sendError } from "../utlis/response";
 import { toString } from "../utlis/helper";
 
 export const createProject = async (req: Request, res: Response) => {
-  const { name, status, description, start_date, end_date } = req.body;
+  const { name, status, description, owner_id, team_id, created_by, blocker } = req.body;
 
   try {
     const project = await prisma.project.create({
@@ -14,16 +14,19 @@ export const createProject = async (req: Request, res: Response) => {
         name,
         status: status ?? "planning",
         description,
-        start_date: start_date ? new Date(start_date) : null,
-        end_date: end_date ? new Date(end_date) : null,
+        owner_id: owner_id != null ? BigInt(owner_id) : null,
+        team_id: team_id != null ? BigInt(team_id) : null,
+        created_by: created_by != null ? BigInt(created_by) : null,
+        blocker,
       },
     });
 
     const serializedProject = {
       ...project,
       id: project.id.toString(),
-      start_date: project.start_date?.toISOString(),
-      end_date: project.end_date?.toISOString(),
+      owner_id: project.owner_id?.toString(),
+      team_id: project.team_id?.toString(),
+      created_by: project.created_by?.toString(),
     };
 
     return sendSuccess(res, 201, "Project created successfully", serializedProject);
@@ -46,8 +49,9 @@ export const getProjects = async (req: Request, res: Response) => {
     const serializedProjects = projects.map((project: any) => ({
       ...project,
       id: project.id.toString(),
-      start_date: project.start_date?.toISOString(),
-      end_date: project.end_date?.toISOString(),
+      owner_id: project.owner_id?.toString(),
+      team_id: project.team_id?.toString(),
+      created_by: project.created_by?.toString(),
       tasks: project.tasks.map((task: any) => ({
         ...task,
         id: task.id.toString(),
@@ -94,8 +98,9 @@ export const getProjectById = async (req: Request, res: Response) => {
     const serializedProject = {
       ...project,
       id: project.id.toString(),
-      start_date: project.start_date?.toISOString(),
-      end_date: project.end_date?.toISOString(),
+      owner_id: project.owner_id?.toString(),
+      team_id: project.team_id?.toString(),
+      created_by: project.created_by?.toString(),
       tasks: project.tasks.map((task: any) => ({
         ...task,
         id: task.id.toString(),
@@ -121,7 +126,7 @@ export const getProjectById = async (req: Request, res: Response) => {
 
 export const updateProject = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, status, description, start_date, end_date } = req.body;
+  const { name, status, description, owner_id, team_id, created_by, blocker } = req.body;
 
   try {
     const project = await prisma.project.update({
@@ -130,8 +135,10 @@ export const updateProject = async (req: Request, res: Response) => {
         ...(name && { name }),
         ...(status && { status }),
         ...(description !== undefined && { description }),
-        ...(start_date !== undefined && { start_date: start_date ? new Date(start_date) : null }),
-        ...(end_date !== undefined && { end_date: end_date ? new Date(end_date) : null }),
+        ...(owner_id !== undefined && { owner_id: owner_id != null ? BigInt(owner_id) : null }),
+        ...(team_id !== undefined && { team_id: team_id != null ? BigInt(team_id) : null }),
+        ...(created_by !== undefined && { created_by: created_by != null ? BigInt(created_by) : null }),
+        ...(blocker !== undefined && { blocker }),
         updated_at: new Date(),
       },
     });
@@ -139,8 +146,9 @@ export const updateProject = async (req: Request, res: Response) => {
     const serializedProject = {
       ...project,
       id: project.id.toString(),
-      start_date: project.start_date?.toISOString(),
-      end_date: project.end_date?.toISOString(),
+      owner_id: project.owner_id?.toString(),
+      team_id: project.team_id?.toString(),
+      created_by: project.created_by?.toString(),
     };
 
     return sendSuccess(res, 200, "Project updated successfully", serializedProject);

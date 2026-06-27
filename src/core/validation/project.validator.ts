@@ -1,6 +1,6 @@
 // validators/project.validator.ts
 import { z } from 'zod';
-import { nameValidator, isoDateValidator, projectStatusEnum, optionalIsoDate } from './common.validator';
+import { nameValidator, projectStatusEnum } from './common.validator';
 
 /**
  * Create Project Schema
@@ -9,23 +9,11 @@ export const createProjectSchema = z.object({
   name: nameValidator,
   description: z.string().optional(),
   status: projectStatusEnum.optional(),
-  start_date: optionalIsoDate(),
-  end_date: optionalIsoDate(),
-}).refine(
-  (data) => {
-    // If both dates are provided, end_date must be after start_date
-    if (data.start_date && data.end_date) {
-      const startDate = new Date(data.start_date);
-      const endDate = new Date(data.end_date);
-      return endDate > startDate;
-    }
-    return true;
-  },
-  {
-    message: 'End date must be after start date',
-    path: ['end_date'],
-  }
-);
+  owner_id: z.union([z.number(), z.string()]).optional().transform((val) => val ? BigInt(val) : null),
+  team_id: z.union([z.number(), z.string()]).optional().transform((val) => val ? BigInt(val) : null),
+  created_by: z.union([z.number(), z.string()]).optional().transform((val) => val ? BigInt(val) : null),
+  blocker: z.string().max(255, 'Blocker must not exceed 255 characters').optional(),
+});
 
 /**
  * Update Project Schema
@@ -35,20 +23,8 @@ export const updateProjectSchema = z.object({
   name: nameValidator.optional(),
   description: z.string().optional().nullable(),
   status: projectStatusEnum.optional(),
-  start_date: optionalIsoDate(),
-  end_date: optionalIsoDate(),
-}).refine(
-  (data) => {
-    // If both dates are provided, end_date must be after start_date
-    if (data.start_date && data.end_date) {
-      const startDate = new Date(data.start_date);
-      const endDate = new Date(data.end_date);
-      return endDate > startDate;
-    }
-    return true;
-  },
-  {
-    message: 'End date must be after start date',
-    path: ['end_date'],
-  }
-).strict();
+  owner_id: z.union([z.number(), z.string()]).optional().transform((val) => val ? BigInt(val) : null),
+  team_id: z.union([z.number(), z.string()]).optional().transform((val) => val ? BigInt(val) : null),
+  created_by: z.union([z.number(), z.string()]).optional().transform((val) => val ? BigInt(val) : null),
+  blocker: z.string().max(255, 'Blocker must not exceed 255 characters').optional().nullable(),
+}).strict();
