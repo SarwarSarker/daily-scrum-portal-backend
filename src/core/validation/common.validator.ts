@@ -15,7 +15,8 @@ export const userStatusEnum = z.enum(['active', 'inactive']);
 export const projectStatusEnum = z.enum(['planning', 'in_progress', 'continue_development', 'on_hold', 'completed']);
 
 // Task status enum
-export const taskStatusEnum = z.enum(['todo', 'in-progress', 'completed']);
+export const taskStatusEnum = z.enum(['pending', 'on_hold', 'in_progress', 'in_review', 'completed']);
+
 
 // Task priority enum
 export const taskPriorityEnum = z.enum(['low', 'medium', 'high']);

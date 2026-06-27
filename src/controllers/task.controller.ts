@@ -6,18 +6,23 @@ import { sendSuccess, sendError } from "../utlis/response";
 import { toString } from "../utlis/helper";
 
 export const createTask = async (req: Request, res: Response) => {
-  const { project_id, assigned_to, title, description, status, priority, due_date } = req.body;
+  const { project_id, assigned_to, created_by, title, description, status, priority, progress, start_date, end_date, blocker, output } = req.body;
 
   try {
     const task = await prisma.task.create({
       data: {
         project_id: BigInt(project_id),
-        assigned_to: assigned_to ? BigInt(assigned_to) : null,
+        assigned_to: assigned_to != null ? BigInt(assigned_to) : null,
+        created_by: created_by != null ? BigInt(created_by) : null,
         title,
         description,
         status: status ?? "todo",
         priority: priority ?? "medium",
-        due_date: due_date ? new Date(due_date) : null,
+        progress: progress ?? 0,
+        start_date: start_date ? new Date(start_date) : null,
+        end_date: end_date ? new Date(end_date) : null,
+        blocker,
+        output,
       },
     });
 
@@ -26,7 +31,9 @@ export const createTask = async (req: Request, res: Response) => {
       id: task.id.toString(),
       project_id: task.project_id.toString(),
       assigned_to: task.assigned_to?.toString(),
-      due_date: task.due_date?.toISOString(),
+      created_by: task.created_by?.toString(),
+      start_date: task.start_date?.toISOString(),
+      end_date: task.end_date?.toISOString(),
     };
 
     return sendSuccess(res, 201, "Task created successfully", serializedTask);
@@ -58,7 +65,9 @@ export const getTasks = async (req: Request, res: Response) => {
       id: task.id.toString(),
       project_id: task.project_id.toString(),
       assigned_to: task.assigned_to?.toString(),
-      due_date: task.due_date?.toISOString(),
+      created_by: task.created_by?.toString(),
+      start_date: task.start_date?.toISOString(),
+      end_date: task.end_date?.toISOString(),
       project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
     }));
 
@@ -89,7 +98,9 @@ export const getTaskById = async (req: Request, res: Response) => {
       id: task.id.toString(),
       project_id: task.project_id.toString(),
       assigned_to: task.assigned_to?.toString(),
-      due_date: task.due_date?.toISOString(),
+      created_by: task.created_by?.toString(),
+      start_date: task.start_date?.toISOString(),
+      end_date: task.end_date?.toISOString(),
       project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
     };
 
@@ -104,23 +115,33 @@ export const updateTask = async (req: Request, res: Response) => {
   const { id } = req.params;
   const {
     assigned_to,
+    created_by,
     title,
     description,
     status,
     priority,
-    due_date,
+    progress,
+    start_date,
+    end_date,
+    blocker,
+    output,
   } = req.body;
 
   try {
     const task = await prisma.task.update({
       where: { id: BigInt(toString(id)) },
       data: {
-        ...(assigned_to !== undefined && { assigned_to: assigned_to ? BigInt(assigned_to) : null }),
+        ...(assigned_to !== undefined && { assigned_to: assigned_to != null ? BigInt(assigned_to) : null }),
+        ...(created_by !== undefined && { created_by: created_by != null ? BigInt(created_by) : null }),
         ...(title && { title }),
         ...(description !== undefined && { description }),
         ...(status && { status }),
         ...(priority && { priority }),
-        ...(due_date !== undefined && { due_date: due_date ? new Date(due_date) : null }),
+        ...(progress !== undefined && { progress }),
+        ...(start_date !== undefined && { start_date: start_date ? new Date(start_date) : null }),
+        ...(end_date !== undefined && { end_date: end_date ? new Date(end_date) : null }),
+        ...(blocker !== undefined && { blocker }),
+        ...(output !== undefined && { output }),
         updated_at: new Date(),
       },
     });
@@ -130,7 +151,9 @@ export const updateTask = async (req: Request, res: Response) => {
       id: task.id.toString(),
       project_id: task.project_id.toString(),
       assigned_to: task.assigned_to?.toString(),
-      due_date: task.due_date?.toISOString(),
+      created_by: task.created_by?.toString(),
+      start_date: task.start_date?.toISOString(),
+      end_date: task.end_date?.toISOString(),
     };
 
     return sendSuccess(res, 200, "Task updated successfully", serializedTask);
