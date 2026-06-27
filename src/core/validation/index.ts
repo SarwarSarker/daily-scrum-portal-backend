@@ -14,7 +14,7 @@ export const validate = (schema: z.ZodSchema) => {
 
       if (!result.success) {
         const errors = formatZodErrors(result.error);
-        return sendError(res, 400, `Validation failed: ${errors.join(', ')}`);
+        return sendError(res, 400, errors.join(', '));
       }
 
       // Replace req.body with validated data
@@ -38,7 +38,7 @@ export const validateParams = (schema: z.ZodSchema) => {
 
       if (!result.success) {
         const errors = formatZodErrors(result.error);
-        return sendError(res, 400, `Parameter validation failed: ${errors.join(', ')}`);
+        return sendError(res, 400, errors.join(', '));
       }
 
       // Replace req.params with validated data
@@ -62,7 +62,7 @@ export const validateQuery = (schema: z.ZodSchema) => {
 
       if (!result.success) {
         const errors = formatZodErrors(result.error);
-        return sendError(res, 400, `Query validation failed: ${errors.join(', ')}`);
+        return sendError(res, 400, errors.join(', '));
       }
 
       // Replace req.query with validated data
@@ -82,7 +82,31 @@ const formatZodErrors = (error: ZodError): string[] => {
   return error.issues.map((err: any) => {
     const path = err.path.join('.');
     const message = err.message;
-    return path ? `${path}: ${message}` : message;
+
+    // Convert technical messages to user-friendly ones
+    const userFriendlyMessages: Record<string, string> = {
+      'Invalid input: expected string, received undefined': 'is required',
+      'Invalid email format': 'must be a valid email address',
+      'Invalid ID format': 'must be a valid ID',
+      'Unrecognized keys': 'contains unexpected fields',
+    };
+
+    const friendlyMessage = userFriendlyMessages[message] || message;
+
+    // Format specific field errors nicely
+    if (path) {
+      // Handle different error types
+      if (message.includes('expected string, received undefined')) {
+        return `${path} is required`;
+      }
+      if (message.includes('Unrecognized keys')) {
+        const unexpectedFields = message.match(/"([^"]+)"/g)?.map((f: string) => f.replace(/"/g, '')).join(', ');
+        return `Unexpected fields: ${unexpectedFields}`;
+      }
+      return `${path} ${friendlyMessage}`;
+    }
+
+    return friendlyMessage;
   });
 };
 

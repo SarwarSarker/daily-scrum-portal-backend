@@ -6,7 +6,7 @@ import { z } from 'zod';
  */
 export const createTaskCommentSchema = z.object({
   user_id: z.union([z.number(), z.string()]).transform(val => BigInt(val)),
-  comment: z.string().min(1, 'Comment is required'),
+  comment: z.string().min(1, 'Please provide a comment'),
 });
 
 /**
@@ -14,7 +14,7 @@ export const createTaskCommentSchema = z.object({
  * Only comment field can be updated
  */
 export const updateTaskCommentSchema = z.object({
-  comment: z.string().min(1, 'Comment is required').optional(),
+  comment: z.string().min(1, 'Please provide a comment').optional(),
 }).strict();
 
 /**

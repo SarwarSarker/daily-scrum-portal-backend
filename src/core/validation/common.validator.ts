@@ -62,23 +62,23 @@ export const bigIntIdValidator = z.string().regex(/^\d+$/, 'Invalid ID format').
 
 // ID schema for route parameters (:id)
 export const idSchema = z.object({
-  id: z.string().regex(/^\d+$/, 'Invalid ID format'),
+  id: z.string().regex(/^\d+$/, 'Please provide a valid ID'),
 });
 
 // Task ID schema for route parameters (:taskId)
 export const taskIdSchema = z.object({
-  taskId: z.string().regex(/^\d+$/, 'Invalid task ID format'),
+  taskId: z.string().regex(/^\d+$/, 'Please provide a valid task ID'),
 });
 
 // Comment ID schema for route parameters (:commentId)
 export const commentIdSchema = z.object({
-  commentId: z.string().regex(/^\d+$/, 'Invalid comment ID format'),
+  commentId: z.string().regex(/^\d+$/, 'Please provide a valid comment ID'),
 });
 
 // Combined Task and Comment ID schema for routes with both parameters
 export const taskAndCommentIdSchema = z.object({
-  taskId: z.string().regex(/^\d+$/, 'Invalid task ID format'),
-  commentId: z.string().regex(/^\d+$/, 'Invalid comment ID format'),
+  taskId: z.string().regex(/^\d+$/, 'Please provide a valid task ID'),
+  commentId: z.string().regex(/^\d+$/, 'Please provide a valid comment ID'),
 });
 
 /**
