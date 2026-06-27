@@ -39,33 +39,51 @@ export const createProject = async (req: Request, res: Response) => {
 export const getProjects = async (req: Request, res: Response) => {
   try {
     const projects = await prisma.project.findMany({
-      include: {
-        tasks: true,
-        projectUpdates: true,
-      },
       orderBy: { created_at: "desc" },
     });
+
+    // Collect all unique owner IDs, team IDs, and created_by IDs
+    const ownerIds = [...new Set(projects.map((p) => p.owner_id).filter(Boolean))] as bigint[];
+    const teamIds = [...new Set(projects.map((p) => p.team_id).filter(Boolean))] as bigint[];
+    const createdByIds = [...new Set(projects.map((p) => p.created_by).filter(Boolean))] as bigint[];
+
+    // Fetch users and teams in parallel
+    const [users, teams] = await Promise.all([
+      ownerIds.length > 0 || createdByIds.length > 0
+        ? prisma.user.findMany({
+            where: {
+              id: { in: [...new Set([...ownerIds, ...createdByIds])] },
+            },
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            },
+          })
+        : [],
+      teamIds.length > 0
+        ? prisma.team.findMany({
+            where: {
+              id: { in: teamIds },
+            },
+            select: {
+              id: true,
+              name: true,
+            },
+          })
+        : [],
+    ]);
+
+    // Create maps for easy lookup
+    const userMap = new Map(users.map((u) => [u.id.toString(), u]));
+    const teamMap = new Map(teams.map((t) => [t.id.toString(), t]));
 
     const serializedProjects = projects.map((project: any) => ({
       ...project,
       id: project.id.toString(),
-      owner_id: project.owner_id?.toString(),
-      team_id: project.team_id?.toString(),
-      created_by: project.created_by?.toString(),
-      tasks: project.tasks.map((task: any) => ({
-        ...task,
-        id: task.id.toString(),
-        project_id: task.project_id.toString(),
-        assigned_to: task.assigned_to?.toString(),
-        due_date: task.due_date?.toISOString(),
-      })),
-      projectUpdates: project.projectUpdates.map((update: any) => ({
-        ...update,
-        id: update.id.toString(),
-        project_id: update.project_id.toString(),
-        updated_by: update.updated_by.toString(),
-        update_date: update.update_date.toISOString(),
-      })),
+      owner: project.owner_id ? userMap.get(project.owner_id.toString()) || null : null,
+      team: project.team_id ? teamMap.get(project.team_id.toString()) || null : null,
+      createdBy: project.created_by ? userMap.get(project.created_by.toString()) || null : null,
     }));
 
     return sendSuccess(res, 200, "Projects retrieved successfully", serializedProjects);
@@ -81,40 +99,52 @@ export const getProjectById = async (req: Request, res: Response) => {
   try {
     const project = await prisma.project.findUnique({
       where: { id: BigInt(toString(id)) },
-      include: {
-        tasks: {
-          orderBy: { created_at: "desc" },
-        },
-        projectUpdates: {
-          orderBy: { update_date: "desc" },
-        },
-      },
     });
 
     if (!project) {
       return sendError(res, 404, "Project not found");
     }
 
+    // Fetch related users and team
+    const userIds = [project.owner_id, project.created_by].filter(Boolean) as bigint[];
+    const teamIds = project.team_id ? [project.team_id] : [];
+
+    const [users, teams] = await Promise.all([
+      userIds.length > 0
+        ? prisma.user.findMany({
+            where: {
+              id: { in: userIds },
+            },
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            },
+          })
+        : [],
+      teamIds.length > 0
+        ? prisma.team.findMany({
+            where: {
+              id: { in: teamIds },
+            },
+            select: {
+              id: true,
+              name: true,
+            },
+          })
+        : [],
+    ]);
+
+    // Create maps for easy lookup
+    const userMap = new Map(users.map((u) => [u.id.toString(), u]));
+    const teamMap = new Map(teams.map((t) => [t.id.toString(), t]));
+
     const serializedProject = {
       ...project,
       id: project.id.toString(),
-      owner_id: project.owner_id?.toString(),
-      team_id: project.team_id?.toString(),
-      created_by: project.created_by?.toString(),
-      tasks: project.tasks.map((task: any) => ({
-        ...task,
-        id: task.id.toString(),
-        project_id: task.project_id.toString(),
-        assigned_to: task.assigned_to?.toString(),
-        due_date: task.due_date?.toISOString(),
-      })),
-      projectUpdates: project.projectUpdates.map((update: any) => ({
-        ...update,
-        id: update.id.toString(),
-        project_id: update.project_id.toString(),
-        updated_by: update.updated_by.toString(),
-        update_date: update.update_date.toISOString(),
-      })),
+      owner: project.owner_id ? userMap.get(project.owner_id.toString()) || null : null,
+      team: project.team_id ? teamMap.get(project.team_id.toString()) || null : null,
+      createdBy: project.created_by ? userMap.get(project.created_by.toString()) || null : null,
     };
 
     return sendSuccess(res, 200, "Project retrieved successfully", serializedProject);
