@@ -65,6 +65,22 @@ export const idSchema = z.object({
   id: z.string().regex(/^\d+$/, 'Invalid ID format'),
 });
 
+// Task ID schema for route parameters (:taskId)
+export const taskIdSchema = z.object({
+  taskId: z.string().regex(/^\d+$/, 'Invalid task ID format'),
+});
+
+// Comment ID schema for route parameters (:commentId)
+export const commentIdSchema = z.object({
+  commentId: z.string().regex(/^\d+$/, 'Invalid comment ID format'),
+});
+
+// Combined Task and Comment ID schema for routes with both parameters
+export const taskAndCommentIdSchema = z.object({
+  taskId: z.string().regex(/^\d+$/, 'Invalid task ID format'),
+  commentId: z.string().regex(/^\d+$/, 'Invalid comment ID format'),
+});
+
 /**
  * Common date validators
  */

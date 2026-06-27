@@ -32,6 +32,15 @@ app.use("/uploads", express.static(path.resolve(env.uploadDir)));
 
 app.use("/api/v1", v1Routes);
 
+// 404 handler for undefined routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    statusCode: 404,
+    message: "Route not found",
+  });
+});
+
 app.use(errorHandler);
 
 export default app;
