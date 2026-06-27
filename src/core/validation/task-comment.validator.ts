@@ -15,7 +15,7 @@ export const createTaskCommentSchema = z.object({
  */
 export const updateTaskCommentSchema = z.object({
   comment: z.string().min(1, 'Please provide a comment').optional(),
-}).strict();
+}); // Allow extra fields to be ignored during validation
 
 /**
  * TaskComment Query Schema

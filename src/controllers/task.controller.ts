@@ -95,28 +95,15 @@ export const updateTaskComment = async (req: Request, res: Response) => {
   const { comment } = req.body;
 
   try {
-    const taskComment = await prisma.taskComment.update({
+    await prisma.taskComment.update({
       where: { id: BigInt(toString(Array.isArray(commentId) ? commentId[0] : commentId)) },
       data: {
         comment,
         updated_at: new Date(),
       },
-      include: {
-        task: { select: { id: true, title: true } },
-        user: { select: { id: true, name: true, email: true, avatar: true } },
-      },
     });
 
-    const serializedComment = {
-      ...taskComment,
-      id: taskComment.id.toString(),
-      task_id: taskComment.task_id.toString(),
-      user_id: taskComment.user_id.toString(),
-      task: taskComment.task ? { ...taskComment.task, id: taskComment.task.id.toString() } : null,
-      user: taskComment.user ? { ...taskComment.user, id: taskComment.user.id.toString() } : null,
-    };
-
-    return sendSuccess(res, 200, "Task comment updated successfully", serializedComment);
+    return sendSuccess(res, 200, "Task comment updated successfully");
   } catch (error) {
     console.error("Error updating task comment:", error);
     return sendError(res, 500, "Failed to update task comment");
