@@ -42,10 +42,15 @@ export const getProjects = async (req: Request, res: Response) => {
       orderBy: { created_at: "desc" },
     });
 
+    console.log("Debug - Total projects:", projects.length);
+
     // Collect all unique owner IDs, team IDs, and created_by IDs
     const ownerIds = [...new Set(projects.map((p) => p.owner_id).filter(Boolean))] as bigint[];
     const teamIds = [...new Set(projects.map((p) => p.team_id).filter(Boolean))] as bigint[];
     const createdByIds = [...new Set(projects.map((p) => p.created_by).filter(Boolean))] as bigint[];
+
+    console.log("Debug - Team IDs from projects:", teamIds);
+    console.log("Debug - Team IDs length:", teamIds.length);
 
     // Fetch users and teams in parallel
     const [users, teams] = await Promise.all([
@@ -74,17 +79,32 @@ export const getProjects = async (req: Request, res: Response) => {
         : [],
     ]);
 
+    console.log("Debug - Teams found:", teams);
+    console.log("Debug - Teams found length:", teams.length);
+
     // Create maps for easy lookup
     const userMap = new Map(users.map((u) => [u.id.toString(), u]));
     const teamMap = new Map(teams.map((t) => [t.id.toString(), t]));
 
-    const serializedProjects = projects.map((project: any) => ({
-      ...project,
-      id: project.id.toString(),
-      owner: project.owner_id ? userMap.get(project.owner_id.toString()) || null : null,
-      team: project.team_id ? teamMap.get(project.team_id.toString()) || null : null,
-      createdBy: project.created_by ? userMap.get(project.created_by.toString()) || null : null,
-    }));
+    console.log("Debug - TeamMap keys:", Array.from(teamMap.keys()));
+    console.log("Debug - TeamMap entries:", Array.from(teamMap.entries()));
+
+    const serializedProjects = projects.map((project: any) => {
+      const teamId = project.team_id?.toString();
+      const team = teamId ? teamMap.get(teamId) || null : null;
+
+      console.log(`Debug - Project ${project.id}: team_id=${project.team_id}, teamId=${teamId}, foundTeam=`, team);
+
+      const { owner_id, team_id, created_by, ...projectFields } = project;
+
+      return {
+        ...projectFields,
+        id: project.id.toString(),
+        owner: project.owner_id ? userMap.get(project.owner_id.toString()) || null : null,
+        team: team,
+        createdBy: project.created_by ? userMap.get(project.created_by.toString()) || null : null,
+      };
+    });
 
     return sendSuccess(res, 200, "Projects retrieved successfully", serializedProjects);
   } catch (error) {
@@ -105,9 +125,15 @@ export const getProjectById = async (req: Request, res: Response) => {
       return sendError(res, 404, "Project not found");
     }
 
+    console.log("Debug - Single project - ID:", project.id.toString());
+    console.log("Debug - Single project - team_id:", project.team_id);
+
     // Fetch related users and team
     const userIds = [project.owner_id, project.created_by].filter(Boolean) as bigint[];
     const teamIds = project.team_id ? [project.team_id] : [];
+
+    console.log("Debug - Single project - Team IDs:", teamIds);
+    console.log("Debug - Single project - Team IDs length:", teamIds.length);
 
     const [users, teams] = await Promise.all([
       userIds.length > 0
@@ -135,15 +161,29 @@ export const getProjectById = async (req: Request, res: Response) => {
         : [],
     ]);
 
+    console.log("Debug - Single project - Teams found:", teams);
+    console.log("Debug - Single project - Teams found length:", teams.length);
+
     // Create maps for easy lookup
     const userMap = new Map(users.map((u) => [u.id.toString(), u]));
     const teamMap = new Map(teams.map((t) => [t.id.toString(), t]));
 
+    console.log("Debug - Single project - TeamMap keys:", Array.from(teamMap.keys()));
+    console.log("Debug - Single project - TeamMap entries:", Array.from(teamMap.entries()));
+
+    const teamId = project.team_id?.toString();
+    const team = teamId ? teamMap.get(teamId) || null : null;
+
+    console.log("Debug - Single project - teamId string:", teamId);
+    console.log("Debug - Single project - found team:", team);
+
+    const { owner_id, team_id, created_by, ...projectFields } = project;
+
     const serializedProject = {
-      ...project,
+      ...projectFields,
       id: project.id.toString(),
       owner: project.owner_id ? userMap.get(project.owner_id.toString()) || null : null,
-      team: project.team_id ? teamMap.get(project.team_id.toString()) || null : null,
+      team: team,
       createdBy: project.created_by ? userMap.get(project.created_by.toString()) || null : null,
     };
 
