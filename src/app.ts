@@ -18,12 +18,18 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-access-token", "X-Requested-With"],
+  credentials: true,
+  optionsSuccessStatus: 200, // For legacy browsers
+};
+
+app.use(cors(corsOptions)); // Also handles OPTIONS preflight automatically
+
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 app.use(helmet());
 
