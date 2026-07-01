@@ -20,15 +20,17 @@ const router = Router();
 // All user routes require authentication
 router.use(authenticate);
 
-// Admin & Manager can create and view all users
+// Only Admin & Manager can create users
 router.post("/", authorize(Role.ADMIN, Role.MANAGER), validate(createUserSchema), createUser);
-router.get("/", authorize(Role.ADMIN, Role.MANAGER), getUsers);
+
+// Any authenticated user can view all users
+router.get("/", getUsers);
 
 // All authenticated users can view their own profile
 router.get("/profile", getProfile);
 
-// Admin & Manager can view any user
-router.get("/:id", authorize(Role.ADMIN, Role.MANAGER), validateParams(idSchema), getUserById);
+// Any authenticated user can view any user
+router.get("/:id", validateParams(idSchema), getUserById);
 
 // Users can update their own profile, Admin can update any
 router.patch("/:id", validateParams(idSchema), validate(updateUserSchema), updateUser);
