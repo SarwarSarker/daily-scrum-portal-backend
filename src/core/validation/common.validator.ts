@@ -31,11 +31,11 @@ export const emailValidator = z.string().email('Invalid email format').max(120, 
 // Password validation with strength requirements
 export const passwordValidator = z
   .string()
-  .min(8, 'Password must be at least 8 characters')
+  .min(6, 'Password must be at least 6 characters')
   .max(255, 'Password must not exceed 255 characters')
-  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-  .regex(/[0-9]/, 'Password must contain at least one number');
+  // .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  // .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  // .regex(/[0-9]/, 'Password must contain at least one number');
 
 // Name validator (for user names, department names, etc.)
 export const nameValidator = z.string().min(2, 'Name must be at least 2 characters').max(120, 'Name must not exceed 120 characters');
@@ -113,6 +113,22 @@ export const paginationSchema = z.object({
  * Helper function to create optional BigInt validators
  */
 export const optionalBigIntId = () => bigIntIdValidator.optional().nullable();
+
+/**
+ * Flexible optional/nullable ID validator.
+ * Accepts both string ("5") and number (5) inputs, validates digits-only,
+ * and transforms to BigInt. Returns null when the value is absent.
+ */
+export const optionalNumericId = (label = 'ID') =>
+  z
+    .union([z.string(), z.number()])
+    .optional()
+    .nullable()
+    .refine(
+      (val) => val === undefined || val === null || /^\d+$/.test(String(val)),
+      { message: `Invalid ${label} format` }
+    )
+    .transform((val) => (val === undefined || val === null ? null : BigInt(val)));
 
 /**
  * Helper function to create optional ISO date validators

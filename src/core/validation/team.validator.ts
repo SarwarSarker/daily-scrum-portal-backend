@@ -1,14 +1,14 @@
 // validators/team.validator.ts
 import { z } from 'zod';
-import { nameValidator } from './common.validator';
+import { nameValidator, optionalNumericId } from './common.validator';
 
 /**
  * Create Team Schema
  */
 export const createTeamSchema = z.object({
   name: nameValidator,
-  department_id: z.string().regex(/^\d+$/, 'Invalid department ID format').optional().nullable().transform(val => val ? BigInt(val) : null),
-  lead_id: z.string().regex(/^\d+$/, 'Invalid lead ID format').optional().nullable().transform(val => val ? BigInt(val) : null),
+  department_id: optionalNumericId('department ID'),
+  lead_id: optionalNumericId('lead ID'),
 });
 
 /**
@@ -17,8 +17,8 @@ export const createTeamSchema = z.object({
  */
 export const updateTeamSchema = z.object({
   name: nameValidator.optional(),
-  department_id: z.string().regex(/^\d+$/, 'Invalid department ID format').optional().nullable().transform(val => val ? BigInt(val) : null),
-  lead_id: z.string().regex(/^\d+$/, 'Invalid lead ID format').optional().nullable().transform(val => val ? BigInt(val) : null),
+  department_id: optionalNumericId('department ID'),
+  lead_id: optionalNumericId('lead ID'),
 }).strict();
 
 /**

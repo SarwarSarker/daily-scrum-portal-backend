@@ -9,6 +9,7 @@ import {
   roleEnum,
   userStatusEnum,
   optionalBigIntId,
+  optionalNumericId,
 } from './common.validator';
 
 /**
@@ -22,8 +23,8 @@ export const registerSchema = z.object({
   role: roleEnum.optional(),
   designation: designationValidator,
   avatar: urlValidator,
-  team_id: z.string().regex(/^\d+$/, 'Invalid team ID format').optional().nullable().transform(val => val ? BigInt(val) : null),
-  department_id: z.string().regex(/^\d+$/, 'Invalid department ID format').optional().nullable().transform(val => val ? BigInt(val) : null),
+  team_id: optionalNumericId('team ID'),
+  department_id: optionalNumericId('department ID'),
   status: userStatusEnum.optional(),
 });
 
@@ -47,8 +48,8 @@ export const createUserSchema = z.object({
   role: roleEnum.optional(),
   designation: designationValidator,
   avatar: urlValidator,
-  team_id: z.string().regex(/^\d+$/, 'Invalid team ID format').optional().nullable().transform(val => val ? BigInt(val) : null),
-  department_id: z.string().regex(/^\d+$/, 'Invalid department ID format').optional().nullable().transform(val => val ? BigInt(val) : null),
+  team_id: optionalNumericId('team ID'),
+  department_id: optionalNumericId('department ID'),
   status: userStatusEnum.optional(),
 });
 
@@ -64,8 +65,8 @@ export const updateUserSchema = z.object({
   role: roleEnum.optional(),
   designation: designationValidator.optional(),
   avatar: urlValidator.optional().nullable(),
-  team_id: z.string().regex(/^\d+$/, 'Invalid team ID format').optional().nullable().transform(val => val ? BigInt(val) : null),
-  department_id: z.string().regex(/^\d+$/, 'Invalid department ID format').optional().nullable().transform(val => val ? BigInt(val) : null),
+  team_id: optionalNumericId('team ID'),
+  department_id: optionalNumericId('department ID'),
   status: userStatusEnum.optional(),
 }).strict();
 
