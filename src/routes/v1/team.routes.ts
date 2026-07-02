@@ -19,15 +19,31 @@ const router = Router();
 // All team routes require authentication
 router.use(authenticate);
 
-// Admin & Manager can create teams
-router.post("/", authorize(Role.ADMIN, Role.MANAGER), validate(createTeamSchema), createTeam);
+// Admin, Manager & Team Lead can create teams
+router.post(
+  "/",
+  authorize(Role.ADMIN, Role.MANAGER, Role.TEAM_LEAD, {
+    message: "You are not permitted to add team",
+  }),
+  validate(createTeamSchema),
+  createTeam
+);
 
 // All authenticated users can view teams
 router.get("/", getTeams);
 router.get("/:id", validateParams(idSchema), getTeamById);
 
-// Admin & Manager can update/delete teams
+// Admin & Manager can update teams
 router.patch("/:id", authorize(Role.ADMIN, Role.MANAGER), validateParams(idSchema), validate(updateTeamSchema), updateTeam);
-router.delete("/:id", authorize(Role.ADMIN, Role.MANAGER), validateParams(idSchema), deleteTeam);
+
+// Admin, Manager & Team Lead can remove teams
+router.delete(
+  "/:id",
+  authorize(Role.ADMIN, Role.MANAGER, Role.TEAM_LEAD, {
+    message: "You are not permitted to remove team",
+  }),
+  validateParams(idSchema),
+  deleteTeam
+);
 
 export default router;

@@ -52,33 +52,58 @@ export const getUsers = async (req: Request, res: Response) => {
   try {
     const { role, status, team_id } = req.query;
 
+    // Pagination: default 10 per page (page 1 -> 1-10, page 2 -> 11-20, ...)
+    const pageParam = parseInt(req.query.page as string, 10);
+    const limitParam = parseInt(req.query.limit as string, 10);
+    const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
+    const limit = Number.isNaN(limitParam) || limitParam < 1 ? 10 : Math.min(limitParam, 100);
+    const skip = (page - 1) * limit;
+
     const where: any = {};
     if (role) where.role = role as string;
     if (status) where.status = status as string;
     if (team_id) where.teamId = BigInt(team_id as string);
 
-    const users = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        designation: true,
-        avatar: true,
-        status: true,
-        teamId: true,        created_at: true,
-        updated_at: true,
-      },
-      orderBy: { created_at: "desc" },
-    });
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          designation: true,
+          avatar: true,
+          status: true,
+          teamId: true,
+          created_at: true,
+          updated_at: true,
+        },
+        orderBy: { created_at: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.user.count({ where }),
+    ]);
 
     const serializedUsers = users.map((user: any) => ({
       ...user,
       id: user.id.toString(),
-      }));
+    }));
 
-    return sendSuccess(res, 200, "Users retrieved successfully", serializedUsers);
+    const totalPages = Math.ceil(total / limit);
+
+    return sendSuccess(res, 200, "Users retrieved successfully", {
+      items: serializedUsers,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
   } catch (error) {
     console.error("Error fetching users:", error);
     return sendError(res, 500, "Failed to fetch users");

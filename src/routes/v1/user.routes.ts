@@ -20,8 +20,15 @@ const router = Router();
 // All user routes require authentication
 router.use(authenticate);
 
-// Only Admin & Manager can create users
-router.post("/", authorize(Role.ADMIN, Role.MANAGER), validate(createUserSchema), createUser);
+// Admin, Manager & Team Lead can create users
+router.post(
+  "/",
+  authorize(Role.ADMIN, Role.MANAGER, Role.TEAM_LEAD, {
+    message: "You are not permitted to add user",
+  }),
+  validate(createUserSchema),
+  createUser
+);
 
 // Any authenticated user can view all users
 router.get("/", getUsers);
@@ -35,7 +42,14 @@ router.get("/:id", validateParams(idSchema), getUserById);
 // Users can update their own profile, Admin can update any
 router.patch("/:id", validateParams(idSchema), validate(updateUserSchema), updateUser);
 
-// Only Admin can delete users
-router.delete("/:id", authorize(Role.ADMIN), validateParams(idSchema), deleteUser);
+// Admin, Manager & Team Lead can delete users
+router.delete(
+  "/:id",
+  authorize(Role.ADMIN, Role.MANAGER, Role.TEAM_LEAD, {
+    message: "You are not permitted to remove user",
+  }),
+  validateParams(idSchema),
+  deleteUser
+);
 
 export default router;
