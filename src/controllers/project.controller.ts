@@ -68,9 +68,9 @@ export const getProjects = async (req: Request, res: Response) => {
 
     const assigneeIds = [...new Set(taskAssignees.map((t) => t.assigned_to).filter(Boolean))] as bigint[];
 
-    // Fetch all referenced users (owners, creators, members) and teams in parallel
+    // Fetch referenced users, teams, task stats (total + avg progress), and completed counts in parallel
     const allUserIds = [...new Set([...ownerIds, ...createdByIds, ...assigneeIds])];
-    const [users, teams] = await Promise.all([
+    const [users, teams, taskStatsRows, completedRows] = await Promise.all([
       allUserIds.length > 0
         ? prisma.user.findMany({
             where: {
@@ -94,11 +94,52 @@ export const getProjects = async (req: Request, res: Response) => {
             },
           })
         : [],
+      projectIds.length > 0
+        ? prisma.task.groupBy({
+            by: ["project_id"],
+            where: {
+              project_id: { in: projectIds },
+            },
+            _avg: {
+              progress: true,
+            },
+            _count: {
+              _all: true,
+            },
+          })
+        : [],
+      projectIds.length > 0
+        ? prisma.task.groupBy({
+            by: ["project_id"],
+            where: {
+              project_id: { in: projectIds },
+              status: { equals: "completed", mode: "insensitive" },
+            },
+            _count: {
+              _all: true,
+            },
+          })
+        : [],
     ]);
 
     // Create maps for easy lookup
     const userMap = new Map(users.map((u) => [u.id.toString(), u]));
     const teamMap = new Map(teams.map((t) => [t.id.toString(), t]));
+
+    // Per-project progress (avg of task progress) and total task count
+    const progressMap = new Map<string, number>();
+    const totalTaskMap = new Map<string, number>();
+    for (const row of taskStatsRows) {
+      const key = row.project_id.toString();
+      progressMap.set(key, Math.round(row._avg.progress ?? 0));
+      totalTaskMap.set(key, row._count._all);
+    }
+
+    // Per-project completed task count
+    const completedTaskMap = new Map<string, number>();
+    for (const row of completedRows) {
+      completedTaskMap.set(row.project_id.toString(), row._count._all);
+    }
 
     // Build the member list (id, name, avatar) for each project from distinct assignees
     const membersMap = new Map<string, Array<{ id: bigint; name: string | null; avatar: string | null }>>();
@@ -118,7 +159,10 @@ export const getProjects = async (req: Request, res: Response) => {
 
       const { owner_id, team_id, created_by, ...projectFields } = project;
 
-      const members = membersMap.get(project.id.toString()) ?? [];
+      const projectKey = project.id.toString();
+      const members = membersMap.get(projectKey) ?? [];
+      const totalTasks = totalTaskMap.get(projectKey) ?? 0;
+      const completedTasks = completedTaskMap.get(projectKey) ?? 0;
 
       return {
         ...projectFields,
@@ -126,6 +170,12 @@ export const getProjects = async (req: Request, res: Response) => {
         owner: project.owner_id ? userMap.get(project.owner_id.toString()) || null : null,
         team: team,
         createdBy: project.created_by ? userMap.get(project.created_by.toString()) || null : null,
+        progress: progressMap.get(projectKey) ?? 0,
+        taskStats: {
+          total: totalTasks,
+          completed: completedTasks,
+          remaining: totalTasks - completedTasks,
+        },
         memberCount: members.length,
         members: members,
       };
@@ -168,7 +218,7 @@ export const getProjectById = async (req: Request, res: Response) => {
     const userIds = [...new Set([project.owner_id, project.created_by, ...assigneeIds].filter(Boolean))] as bigint[];
     const teamIds = project.team_id ? [project.team_id] : [];
 
-    const [users, teams] = await Promise.all([
+    const [users, teams, progressAgg, completedTasks] = await Promise.all([
       userIds.length > 0
         ? prisma.user.findMany({
             where: {
@@ -192,11 +242,39 @@ export const getProjectById = async (req: Request, res: Response) => {
             },
           })
         : [],
+      prisma.task.aggregate({
+        where: {
+          project_id: project.id,
+        },
+        _avg: {
+          progress: true,
+        },
+        _count: {
+          _all: true,
+        },
+      }),
+      prisma.task.count({
+        where: {
+          project_id: project.id,
+          status: { equals: "completed", mode: "insensitive" },
+        },
+      }),
     ]);
 
     // Create maps for easy lookup
     const userMap = new Map(users.map((u) => [u.id.toString(), u]));
     const teamMap = new Map(teams.map((t) => [t.id.toString(), t]));
+
+    // Project progress = average progress of its tasks (0 when it has no tasks)
+    const progress = Math.round(progressAgg._avg.progress ?? 0);
+
+    // Task counts for this project
+    const totalTasks = progressAgg._count._all;
+    const taskStats = {
+      total: totalTasks,
+      completed: completedTasks,
+      remaining: totalTasks - completedTasks,
+    };
 
     // Members (id, name, avatar) working on this project
     const members = assigneeIds
@@ -214,6 +292,8 @@ export const getProjectById = async (req: Request, res: Response) => {
       owner: project.owner_id ? userMap.get(project.owner_id.toString()) || null : null,
       team: team,
       createdBy: project.created_by ? userMap.get(project.created_by.toString()) || null : null,
+      progress: progress,
+      taskStats: taskStats,
       memberCount: members.length,
       members: members,
     };
@@ -222,6 +302,75 @@ export const getProjectById = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error fetching project:", error);
     return sendError(res, 500, "Failed to fetch project");
+  }
+};
+
+// Get all tasks that belong to a project
+export const getProjectTasks = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status } = req.query;
+
+  try {
+    const projectId = BigInt(toString(id));
+
+    // Ensure the project exists so we can return a clear 404 (and reuse its name)
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, name: true },
+    });
+
+    if (!project) {
+      return sendError(res, 404, "Project not found");
+    }
+
+    const where: any = { project_id: projectId };
+    if (status) where.status = status as string;
+
+    const tasks = await prisma.task.findMany({
+      where,
+      orderBy: { created_at: "desc" },
+    });
+
+    // Resolve assigned_to / created_by into user details (id, name, avatar)
+    const userIds = [
+      ...new Set(
+        [
+          ...tasks.map((t) => t.assigned_to),
+          ...tasks.map((t) => t.created_by),
+        ].filter(Boolean)
+      ),
+    ] as bigint[];
+
+    const users =
+      userIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true, avatar: true },
+          })
+        : [];
+
+    const userMap = new Map(users.map((u) => [u.id.toString(), u]));
+
+    const serializedProject = { id: project.id.toString(), name: project.name };
+
+    const serializedTasks = tasks.map((task: any) => {
+      const { project_id, assigned_to, created_by, ...taskFields } = task;
+
+      return {
+        ...taskFields,
+        id: task.id.toString(),
+        project: serializedProject,
+        assigned_to: task.assigned_to ? userMap.get(task.assigned_to.toString()) || null : null,
+        created_by: task.created_by ? userMap.get(task.created_by.toString()) || null : null,
+        start_date: task.start_date?.toISOString() ?? null,
+        end_date: task.end_date?.toISOString() ?? null,
+      };
+    });
+
+    return sendSuccess(res, 200, "Project tasks retrieved successfully", serializedTasks);
+  } catch (error) {
+    console.error("Error fetching project tasks:", error);
+    return sendError(res, 500, "Failed to fetch project tasks");
   }
 };
 

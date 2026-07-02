@@ -5,6 +5,7 @@ import {
   createProject,
   getProjects,
   getProjectById,
+  getProjectTasks,
   updateProject,
   deleteProject,
 } from "../../controllers/project.controller";
@@ -25,6 +26,9 @@ router.post("/", authorize(Role.ADMIN, Role.MANAGER), validate(createProjectSche
 // All authenticated users can view projects
 router.get("/", getProjects);
 router.get("/:id", validateParams(idSchema), getProjectById);
+
+// All authenticated users can view the tasks under a project
+router.get("/:id/tasks", validateParams(idSchema), getProjectTasks);
 
 // Admin & Manager can update/delete projects
 router.patch("/:id", authorize(Role.ADMIN, Role.MANAGER), validateParams(idSchema), validate(updateProjectSchema), updateProject);

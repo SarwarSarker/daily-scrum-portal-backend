@@ -30,17 +30,29 @@ export const getTaskComments = async (req: Request, res: Response) => {
   try {
     const { taskId } = req.params;
 
+    // Pagination: default 10 per page (page 1 -> 1-10, page 2 -> 11-20, ...)
+    const pageParam = parseInt(req.query.page as string, 10);
+    const limitParam = parseInt(req.query.limit as string, 10);
+    const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
+    const limit = Number.isNaN(limitParam) || limitParam < 1 ? 10 : Math.min(limitParam, 100);
+    const skip = (page - 1) * limit;
+
     const where: any = {};
     if (taskId) where.task_id = BigInt(Array.isArray(taskId) ? taskId[0] : taskId);
 
-    const taskComments = await prisma.taskComment.findMany({
-      where,
-      include: {
-        task: { select: { id: true, title: true } },
-        user: { select: { id: true, name: true, email: true, avatar: true, role: true } },
-      },
-      orderBy: { created_at: "desc" },
-    });
+    const [taskComments, total] = await Promise.all([
+      prisma.taskComment.findMany({
+        where,
+        include: {
+          task: { select: { id: true, title: true } },
+          user: { select: { id: true, name: true, email: true, avatar: true, role: true } },
+        },
+        orderBy: { created_at: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.taskComment.count({ where }),
+    ]);
 
     const serializedComments = taskComments.map((comment: any) => ({
       ...comment,
@@ -51,7 +63,19 @@ export const getTaskComments = async (req: Request, res: Response) => {
       user: comment.user ? { ...comment.user, id: comment.user.id.toString() } : null,
     }));
 
-    return sendSuccess(res, 200, "Task comments retrieved successfully", serializedComments);
+    const totalPages = Math.ceil(total / limit);
+
+    return sendSuccess(res, 200, "Task comments retrieved successfully", {
+      items: serializedComments,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
   } catch (error) {
     console.error("Error fetching task comments:", error);
     return sendError(res, 500, "Failed to fetch task comments");
@@ -167,31 +191,78 @@ export const getTasks = async (req: Request, res: Response) => {
   try {
     const { project_id, status, assigned_to } = req.query;
 
+    // Pagination: default 10 per page (page 1 -> 1-10, page 2 -> 11-20, ...)
+    const pageParam = parseInt(req.query.page as string, 10);
+    const limitParam = parseInt(req.query.limit as string, 10);
+    const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
+    const limit = Number.isNaN(limitParam) || limitParam < 1 ? 10 : Math.min(limitParam, 100);
+    const skip = (page - 1) * limit;
+
     const where: any = {};
     if (project_id) where.project_id = BigInt(project_id as string);
     if (status) where.status = status as string;
     if (assigned_to) where.assigned_to = BigInt(assigned_to as string);
 
-    const tasks = await prisma.task.findMany({
-      where,
-      include: {
-        project: { select: { id: true, name: true } },
-      },
-      orderBy: { created_at: "desc" },
+    const [tasks, total] = await Promise.all([
+      prisma.task.findMany({
+        where,
+        include: {
+          project: { select: { id: true, name: true } },
+        },
+        orderBy: { created_at: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.task.count({ where }),
+    ]);
+
+    // Resolve assigned_to / created_by into user details (id, name, avatar)
+    const userIds = [
+      ...new Set(
+        [
+          ...tasks.map((t) => t.assigned_to),
+          ...tasks.map((t) => t.created_by),
+        ].filter(Boolean)
+      ),
+    ] as bigint[];
+
+    const users =
+      userIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true, avatar: true },
+          })
+        : [];
+
+    const userMap = new Map(users.map((u) => [u.id.toString(), u]));
+
+    const serializedTasks = tasks.map((task: any) => {
+      const { project_id, assigned_to, created_by, ...taskFields } = task;
+
+      return {
+        ...taskFields,
+        id: task.id.toString(),
+        project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
+        assigned_to: task.assigned_to ? userMap.get(task.assigned_to.toString()) || null : null,
+        created_by: task.created_by ? userMap.get(task.created_by.toString()) || null : null,
+        start_date: task.start_date?.toISOString() ?? null,
+        end_date: task.end_date?.toISOString() ?? null,
+      };
     });
 
-    const serializedTasks = tasks.map((task: any) => ({
-      ...task,
-      id: task.id.toString(),
-      project_id: task.project_id.toString(),
-      assigned_to: task.assigned_to?.toString(),
-      created_by: task.created_by?.toString(),
-      start_date: task.start_date?.toISOString(),
-      end_date: task.end_date?.toISOString(),
-      project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
-    }));
+    const totalPages = Math.ceil(total / limit);
 
-    return sendSuccess(res, 200, "Tasks retrieved successfully", serializedTasks);
+    return sendSuccess(res, 200, "Tasks retrieved successfully", {
+      items: serializedTasks,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
   } catch (error) {
     console.error("Error fetching tasks:", error);
     return sendError(res, 500, "Failed to fetch tasks");
@@ -213,15 +284,29 @@ export const getTaskById = async (req: Request, res: Response) => {
       return sendError(res, 404, "Task not found");
     }
 
+    // Resolve assigned_to / created_by into user details (id, name, avatar)
+    const userIds = [...new Set([task.assigned_to, task.created_by].filter(Boolean))] as bigint[];
+
+    const users =
+      userIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true, avatar: true },
+          })
+        : [];
+
+    const userMap = new Map(users.map((u) => [u.id.toString(), u]));
+
+    const { project_id, assigned_to, created_by, ...taskFields } = task;
+
     const serializedTask = {
-      ...task,
+      ...taskFields,
       id: task.id.toString(),
-      project_id: task.project_id.toString(),
-      assigned_to: task.assigned_to?.toString(),
-      created_by: task.created_by?.toString(),
-      start_date: task.start_date?.toISOString(),
-      end_date: task.end_date?.toISOString(),
       project: task.project ? { ...task.project, id: task.project.id.toString() } : null,
+      assigned_to: task.assigned_to ? userMap.get(task.assigned_to.toString()) || null : null,
+      created_by: task.created_by ? userMap.get(task.created_by.toString()) || null : null,
+      start_date: task.start_date?.toISOString() ?? null,
+      end_date: task.end_date?.toISOString() ?? null,
     };
 
     return sendSuccess(res, 200, "Task retrieved successfully", serializedTask);
