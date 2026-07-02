@@ -15,7 +15,6 @@ model User {
   designation    String?         @db.VarChar(100)
   avatar         String?
   teamId         BigInt?         @map("team_id")
-  departmentId   BigInt?         @map("department_id")
   status         String?         @default("active") @db.VarChar(20)
   created_at     DateTime?       @default(now()) @db.Timestamp(6)
   updated_at     DateTime?       @default(now()) @db.Timestamp(6)
@@ -87,17 +86,6 @@ model ProjectUpdate {
   @@map("project_updates")
 }
 
-model Department {
-  id         BigInt   @id @default(autoincrement())
-  name       String   @unique @db.VarChar(100)
-  slug       String   @unique @db.VarChar(100)
-  created_at DateTime @default(now()) @db.Timestamp(6)
-  updated_at DateTime @default(now()) @db.Timestamp(6)
-  teams      Team[]
-
-  @@map("departments")
-}
-
 model TaskComment {
   id         BigInt   @id @default(autoincrement())
   task_id    BigInt
@@ -112,15 +100,12 @@ model TaskComment {
 }
 
 model Team {
-  id            BigInt      @id @default(autoincrement())
-  name          String      @db.VarChar(120)
-  department_id BigInt?
-  lead_id       BigInt?
-  created_at    DateTime    @default(now()) @db.Timestamp(6)
-  updated_at    DateTime    @default(now()) @db.Timestamp(6)
-  department    Department? @relation(fields: [department_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  lead          User?       @relation("TeamLead", fields: [lead_id], references: [id], onUpdate: NoAction)
+  id         BigInt   @id @default(autoincrement())
+  name       String   @db.VarChar(120)
+  lead_id    BigInt?
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
+  lead       User?    @relation("TeamLead", fields: [lead_id], references: [id], onUpdate: NoAction)
 
-  @@unique([department_id, name])
   @@map("teams")
 }

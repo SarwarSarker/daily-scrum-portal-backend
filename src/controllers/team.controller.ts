@@ -6,13 +6,12 @@ import { sendSuccess, sendError } from "../utlis/response";
 import { toString } from "../utlis/helper";
 
 export const createTeam = async (req: Request, res: Response) => {
-  const { name, department_id, lead_id } = req.body;
+  const { name, lead_id } = req.body;
 
   try {
     const team = await prisma.team.create({
       data: {
         name,
-        department_id: department_id ? BigInt(department_id) : null,
         lead_id: lead_id ? BigInt(lead_id) : null,
       },
     });
@@ -20,7 +19,6 @@ export const createTeam = async (req: Request, res: Response) => {
     const serializedTeam = {
       ...team,
       id: team.id.toString(),
-      department_id: team.department_id?.toString(),
       lead_id: team.lead_id?.toString(),
     };
 
@@ -33,20 +31,13 @@ export const createTeam = async (req: Request, res: Response) => {
 
 export const getTeams = async (req: Request, res: Response) => {
   try {
-    const { department_id } = req.query;
-
-    const where: any = {};
-    if (department_id) where.department_id = BigInt(department_id as string);
-
     const teams = await prisma.team.findMany({
-      where,
       orderBy: { created_at: "desc" },
     });
 
     const serializedTeams = teams.map((team: any) => ({
       ...team,
       id: team.id.toString(),
-      department_id: team.department_id?.toString(),
       lead_id: team.lead_id?.toString(),
     }));
 
@@ -72,7 +63,6 @@ export const getTeamById = async (req: Request, res: Response) => {
     const serializedTeam = {
       ...team,
       id: team.id.toString(),
-      department_id: team.department_id?.toString(),
       lead_id: team.lead_id?.toString(),
     };
 
@@ -85,7 +75,7 @@ export const getTeamById = async (req: Request, res: Response) => {
 
 export const updateTeam = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, department_id, lead_id } = req.body;
+  const { name, lead_id } = req.body;
 
   try {
     // First check if team exists
@@ -101,7 +91,6 @@ export const updateTeam = async (req: Request, res: Response) => {
       where: { id: BigInt(toString(id)) },
       data: {
         ...(name && { name }),
-        ...(department_id !== undefined && { department_id: department_id ? BigInt(department_id) : null }),
         ...(lead_id !== undefined && { lead_id: lead_id ? BigInt(lead_id) : null }),
         updated_at: new Date(),
       },
@@ -110,7 +99,6 @@ export const updateTeam = async (req: Request, res: Response) => {
     const serializedTeam = {
       ...team,
       id: team.id.toString(),
-      department_id: team.department_id?.toString(),
       lead_id: team.lead_id?.toString(),
     };
 

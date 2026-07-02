@@ -115,7 +115,6 @@ const formatZodErrors = (error: ZodError): string[] => {
  */
 export * from './common.validator';
 export * from './user.validator';
-export * from './department.validator';
 export * from './team.validator';
 export * from './project.validator';
 export * from './task.validator';

@@ -7,7 +7,6 @@ import { nameValidator, optionalNumericId } from './common.validator';
  */
 export const createTeamSchema = z.object({
   name: nameValidator,
-  department_id: optionalNumericId('department ID'),
   lead_id: optionalNumericId('lead ID'),
 });
 
@@ -17,7 +16,6 @@ export const createTeamSchema = z.object({
  */
 export const updateTeamSchema = z.object({
   name: nameValidator.optional(),
-  department_id: optionalNumericId('department ID'),
   lead_id: optionalNumericId('lead ID'),
 }).strict();
 
@@ -25,6 +23,4 @@ export const updateTeamSchema = z.object({
  * Team Query Schema
  * Used for filtering teams in GET requests
  */
-export const teamQuerySchema = z.object({
-  department_id: z.string().regex(/^\d+$/, 'Invalid department ID format').optional(),
-});
+export const teamQuerySchema = z.object({});

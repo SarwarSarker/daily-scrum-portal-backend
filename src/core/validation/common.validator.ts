@@ -37,7 +37,7 @@ export const passwordValidator = z
   // .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   // .regex(/[0-9]/, 'Password must contain at least one number');
 
-// Name validator (for user names, department names, etc.)
+// Name validator (for user names, team names, etc.)
 export const nameValidator = z.string().min(2, 'Name must be at least 2 characters').max(120, 'Name must not exceed 120 characters');
 
 // Designation validator

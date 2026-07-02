@@ -8,7 +8,7 @@ import { toString } from "../utlis/helper";
 import { Role } from "../utlis/role";
 
 export const createUser = async (req: Request, res: Response) => {
-  const { name, email, password, role, designation, avatar, team_id, department_id, status } = req.body;
+  const { name, email, password, role, designation, avatar, team_id, status } = req.body;
 
   try {
     const exists = await prisma.user.findUnique({ where: { email } });
@@ -25,7 +25,6 @@ export const createUser = async (req: Request, res: Response) => {
         designation,
         avatar,
         teamId: team_id != null ? BigInt(team_id) : undefined,
-        departmentId: department_id != null ? BigInt(department_id) : undefined,
         status: status ?? "active",
       },
     });
@@ -40,9 +39,7 @@ export const createUser = async (req: Request, res: Response) => {
       status: user.status,
       created_at: user.created_at?.toISOString(),
       updated_at: user.updated_at?.toISOString(),
-      teamId: user.teamId?.toString(),
-      departmentId: user.departmentId?.toString(),
-    };
+      teamId: user.teamId?.toString(),    };
 
     return sendSuccess(res, 201, "User created successfully", serializedUser);
   } catch (error) {
@@ -53,12 +50,11 @@ export const createUser = async (req: Request, res: Response) => {
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    const { role, status, department_id, team_id } = req.query;
+    const { role, status, team_id } = req.query;
 
     const where: any = {};
     if (role) where.role = role as string;
     if (status) where.status = status as string;
-    if (department_id) where.departmentId = BigInt(department_id as string);
     if (team_id) where.teamId = BigInt(team_id as string);
 
     const users = await prisma.user.findMany({
@@ -71,9 +67,7 @@ export const getUsers = async (req: Request, res: Response) => {
         designation: true,
         avatar: true,
         status: true,
-        teamId: true,
-        departmentId: true,
-        created_at: true,
+        teamId: true,        created_at: true,
         updated_at: true,
       },
       orderBy: { created_at: "desc" },
@@ -112,9 +106,7 @@ export const getProfile = async (req: Request, res: Response) => {
         status: true,
         created_at: true,
         updated_at: true,
-        teamId: true,
-        departmentId: true,
-      },
+        teamId: true,      },
     });
 
     if (!user) {
@@ -131,9 +123,7 @@ export const getProfile = async (req: Request, res: Response) => {
       status: user.status,
       created_at: user.created_at?.toISOString(),
       updated_at: user.updated_at?.toISOString(),
-      teamId: user.teamId?.toString(),
-      departmentId: user.departmentId?.toString(),
-    };
+      teamId: user.teamId?.toString(),    };
 
     return sendSuccess(res, 200, "Profile retrieved successfully", serializedUser);
   } catch (error) {
@@ -158,9 +148,7 @@ export const getUserById = async (req: Request, res: Response) => {
         status: true,
         created_at: true,
         updated_at: true,
-        teamId: true,
-        departmentId: true,
-      },
+        teamId: true,      },
     });
 
     if (!user) {
@@ -177,9 +165,7 @@ export const getUserById = async (req: Request, res: Response) => {
       status: user.status,
       created_at: user.created_at?.toISOString(),
       updated_at: user.updated_at?.toISOString(),
-      teamId: user.teamId?.toString(),
-      departmentId: user.departmentId?.toString(),
-    };
+      teamId: user.teamId?.toString(),    };
 
     return sendSuccess(res, 200, "User retrieved successfully", serializedUser);
   } catch (error) {
@@ -190,7 +176,7 @@ export const getUserById = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, email, role, designation, avatar, team_id, department_id, status, password } = req.body;
+  const { name, email, role, designation, avatar, team_id, status, password } = req.body;
 
   try {
     const updateData: any = {
@@ -200,7 +186,6 @@ export const updateUser = async (req: Request, res: Response) => {
       ...(designation !== undefined && { designation }),
       ...(avatar !== undefined && { avatar }),
       ...(team_id !== undefined && { teamId: team_id ? BigInt(team_id) : null }),
-      ...(department_id !== undefined && { departmentId: department_id ? BigInt(department_id) : null }),
       ...(status && { status }),
       updated_at: new Date(),
     };
@@ -222,9 +207,7 @@ export const updateUser = async (req: Request, res: Response) => {
         status: true,
         created_at: true,
         updated_at: true,
-        teamId: true,
-        departmentId: true,
-      },
+        teamId: true,      },
     });
 
     const serializedUser: any = {
@@ -237,9 +220,7 @@ export const updateUser = async (req: Request, res: Response) => {
       status: user.status,
       created_at: user.created_at?.toISOString(),
       updated_at: user.updated_at?.toISOString(),
-      teamId: user.teamId?.toString(),
-      departmentId: user.departmentId?.toString(),
-    };
+      teamId: user.teamId?.toString(),    };
 
     return sendSuccess(res, 200, "User updated successfully", serializedUser);
   } catch (error) {

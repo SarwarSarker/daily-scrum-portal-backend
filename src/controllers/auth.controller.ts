@@ -17,7 +17,6 @@ export const register = async (req: Request, res: Response) => {
     designation,
     avatar,
     team_id,
-    department_id,
     status,
   } = req.body;
 
@@ -35,7 +34,6 @@ export const register = async (req: Request, res: Response) => {
       designation,
       avatar,
       teamId: team_id != null ? BigInt(team_id) : undefined,
-      departmentId: department_id != null ? BigInt(department_id) : undefined,
       status: status ?? undefined,
     },
   });

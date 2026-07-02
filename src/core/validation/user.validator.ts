@@ -24,7 +24,6 @@ export const registerSchema = z.object({
   designation: designationValidator,
   avatar: urlValidator,
   team_id: optionalNumericId('team ID'),
-  department_id: optionalNumericId('department ID'),
   status: userStatusEnum.optional(),
 });
 
@@ -49,7 +48,6 @@ export const createUserSchema = z.object({
   designation: designationValidator,
   avatar: urlValidator,
   team_id: optionalNumericId('team ID'),
-  department_id: optionalNumericId('department ID'),
   status: userStatusEnum.optional(),
 });
 
@@ -66,7 +64,6 @@ export const updateUserSchema = z.object({
   designation: designationValidator.optional(),
   avatar: urlValidator.optional().nullable(),
   team_id: optionalNumericId('team ID'),
-  department_id: optionalNumericId('department ID'),
   status: userStatusEnum.optional(),
 }).strict();
 
@@ -77,6 +74,5 @@ export const updateUserSchema = z.object({
 export const userQuerySchema = z.object({
   role: roleEnum.optional(),
   status: userStatusEnum.optional(),
-  department_id: z.string().regex(/^\d+$/, 'Invalid department ID format').optional(),
   team_id: z.string().regex(/^\d+$/, 'Invalid team ID format').optional(),
 });
