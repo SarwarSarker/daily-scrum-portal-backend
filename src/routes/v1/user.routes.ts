@@ -39,8 +39,16 @@ router.get("/profile", getProfile);
 // Any authenticated user can view any user
 router.get("/:id", validateParams(idSchema), getUserById);
 
-// Users can update their own profile, Admin can update any
-router.patch("/:id", validateParams(idSchema), validate(updateUserSchema), updateUser);
+// Admin, Manager & Team Lead can update users
+router.patch(
+  "/:id",
+  authorize(Role.ADMIN, Role.MANAGER, Role.TEAM_LEAD, {
+    message: "You are not permitted to update user",
+  }),
+  validateParams(idSchema),
+  validate(updateUserSchema),
+  updateUser
+);
 
 // Admin, Manager & Team Lead can delete users
 router.delete(
